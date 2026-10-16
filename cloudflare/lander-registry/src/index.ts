@@ -28,6 +28,9 @@ const MANUAL_EXCHANGE_HOLDER_COUNT = 1;
 const ALLOWED_ORIGINS = new Set([
   "https://landingcoin.fun",
   "https://www.landingcoin.fun",
+  // Temporary private preview origin for validating the redesigned ChatGPT Site
+  // against the existing production APIs before the domain cutover.
+  "https://landing-descent-prototype.madmike74.chatgpt.site",
 ]);
 
 type JsonRecord = Record<string, unknown>;
