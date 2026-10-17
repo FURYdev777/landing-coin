@@ -14,6 +14,7 @@ const WALL_RECIPIENT_OWNER = "F7Pio8v6YLwXbwRgQAH8Q7cMqsdaUX3mJeyFyTZbvhhT";
 const WALL_PRICE_RAW = 5_000_000_000n;
 const WALL_MEMO_PREFIX = "LANDING-WALL:v1:";
 const WALL_HIDDEN_SIGNATURES = new Set<string>([]);
+const DEXSCREENER_PAIR_API = `https://api.dexscreener.com/latest/dex/pairs/solana/${ORCA_POOL}`;
 
 const PROJECT_WALLETS = new Set([
   "CBPwvUZrDQThyM6a54shKPpywvpTyYQQ2Ng7FWPZPM88",
@@ -277,16 +278,73 @@ async function fetchTokenAccountState(address: string): Promise<JsonRecord> {
   if (!info || !tokenAmount) throw new Error("Unable to parse token account state");
   return { owner: typeof info.owner === "string" ? info.owner : null, mint: typeof info.mint === "string" ? info.mint : null, amountRaw: typeof tokenAmount.amount === "string" ? tokenAmount.amount : null, decimals: typeof tokenAmount.decimals === "number" ? tokenAmount.decimals : null, uiAmountString: typeof tokenAmount.uiAmountString === "string" ? tokenAmount.uiAmountString : null };
 }
+async function fetchGeckoTerminalMarketState(): Promise<JsonRecord> {
+  const response = await fetch(GECKOTERMINAL_POOL_API, { headers: { accept: "application/json" }, cf: { cacheTtl: 30, cacheEverything: true } });
+  if (!response.ok) throw new Error(`GeckoTerminal HTTP ${response.status}`);
+  const payload: unknown = await response.json();
+  const root = asRecord(payload);
+  const data = root ? asRecord(root.data) : null;
+  const attributes = data ? asRecord(data.attributes) : null;
+  if (!attributes) throw new Error("Invalid GeckoTerminal response");
+  const volumes = asRecord(attributes.volume_usd);
+  const transactions = asRecord(attributes.transactions);
+  const h24 = transactions ? asRecord(transactions.h24) : null;
+  return {
+    priceUsd: typeof attributes.base_token_price_usd === "string" ? attributes.base_token_price_usd : null,
+    liquidityUsd: typeof attributes.reserve_in_usd === "string" ? attributes.reserve_in_usd : null,
+    volume24hUsd: volumes && typeof volumes.h24 === "string" ? volumes.h24 : null,
+    buys24h: h24 && typeof h24.buys === "number" ? h24.buys : null,
+    sells24h: h24 && typeof h24.sells === "number" ? h24.sells : null,
+    source: "GeckoTerminal",
+  };
+}
+
+async function fetchDexScreenerMarketState(): Promise<JsonRecord> {
+  const response = await fetch(DEXSCREENER_PAIR_API, { headers: { accept: "application/json" }, cf: { cacheTtl: 30, cacheEverything: true } });
+  if (!response.ok) throw new Error(`DEX Screener HTTP ${response.status}`);
+
+  const payload: unknown = await response.json();
+  const root = asRecord(payload);
+  const pairs = root && Array.isArray(root.pairs) ? root.pairs : [];
+  const parsedPairs = pairs
+    .map((item) => asRecord(item))
+    .filter((item): item is JsonRecord => item !== null);
+
+  const pair = parsedPairs.find((item) => item.pairAddress === ORCA_POOL) ?? parsedPairs[0] ?? null;
+  if (!pair) throw new Error("Invalid DEX Screener response");
+
+  const liquidity = asRecord(pair.liquidity);
+  const volume = asRecord(pair.volume);
+  const transactions = asRecord(pair.txns);
+  const h24 = transactions ? asRecord(transactions.h24) : null;
+
+  return {
+    priceUsd: typeof pair.priceUsd === "string" ? pair.priceUsd : null,
+    liquidityUsd: liquidity && typeof liquidity.usd === "number" ? String(liquidity.usd) : null,
+    volume24hUsd: volume && typeof volume.h24 === "number" ? String(volume.h24) : null,
+    buys24h: h24 && typeof h24.buys === "number" ? h24.buys : null,
+    sells24h: h24 && typeof h24.sells === "number" ? h24.sells : null,
+    source: "DEX Screener",
+  };
+}
+
 async function fetchMarketState(): Promise<JsonRecord | null> {
   try {
-    const response = await fetch(GECKOTERMINAL_POOL_API, { headers: { accept: "application/json" }, cf: { cacheTtl: 30, cacheEverything: true } });
-    if (!response.ok) throw new Error(`GeckoTerminal HTTP ${response.status}`);
-    const payload: unknown = await response.json(); const root = asRecord(payload); const data = root ? asRecord(root.data) : null; const attributes = data ? asRecord(data.attributes) : null;
-    if (!attributes) throw new Error("Invalid GeckoTerminal response");
-    const volumes = asRecord(attributes.volume_usd); const transactions = asRecord(attributes.transactions); const h24 = transactions ? asRecord(transactions.h24) : null;
-    return { priceUsd: typeof attributes.base_token_price_usd === "string" ? attributes.base_token_price_usd : null, liquidityUsd: typeof attributes.reserve_in_usd === "string" ? attributes.reserve_in_usd : null, volume24hUsd: volumes && typeof volumes.h24 === "string" ? volumes.h24 : null, buys24h: h24 && typeof h24.buys === "number" ? h24.buys : null, sells24h: h24 && typeof h24.sells === "number" ? h24.sells : null, source: "GeckoTerminal" };
+    return await fetchGeckoTerminalMarketState();
   } catch (error) {
-    console.warn(JSON.stringify({ message: "Unable to fetch GeckoTerminal market state", error: error instanceof Error ? error.message : String(error) }));
+    console.warn(JSON.stringify({
+      message: "GeckoTerminal unavailable; trying DEX Screener",
+      error: error instanceof Error ? error.message : String(error),
+    }));
+  }
+
+  try {
+    return await fetchDexScreenerMarketState();
+  } catch (error) {
+    console.warn(JSON.stringify({
+      message: "DEX Screener market fallback unavailable",
+      error: error instanceof Error ? error.message : String(error),
+    }));
     return null;
   }
 }
@@ -499,7 +557,7 @@ async function transparencySnapshot(request: Request): Promise<Response> {
     liquidity: { pool: ORCA_POOL, landingVault: ORCA_LANDING_VAULT, solVault: ORCA_SOL_VAULT, landingVaultBalance: landingVault, solVaultBalance: solVault },
     market,
     methodology: { positiveHolder: "unique token-account owner with aggregate LANDING balance greater than zero", projectWallets: [...PROJECT_WALLETS], founderHolderCountManual: MANUAL_FOUNDER_HOLDER_COUNT, exchangeHolderCountManual: MANUAL_EXCHANGE_HOLDER_COUNT, notes: "Founder and exchange classifications remain manual until their exact holding addresses are explicitly configured. No personal or trader addresses are returned by this endpoint." },
-    sources: { solanaRpc: { privateConfigured: Boolean(PRIMARY_SOLANA_RPC), publicFallbacks: PUBLIC_SOLANA_RPCS }, market: GECKOTERMINAL_POOL_API },
+    sources: { solanaRpc: { privateConfigured: Boolean(PRIMARY_SOLANA_RPC), publicFallbacks: PUBLIC_SOLANA_RPCS }, market: { primary: GECKOTERMINAL_POOL_API, fallback: DEXSCREENER_PAIR_API } },
     errors,
   });
 }
