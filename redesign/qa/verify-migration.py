@@ -12,7 +12,7 @@ removed = {'review.html'}
 production_deltas = {
     name for name in manifest['files']
     if name.endswith('.html')
-} | {'robots.txt', 'sitemap.xml', 'page-manifest.json'}
+} | {'robots.txt', 'sitemap.xml', 'page-manifest.json', 'integration.css', 'lander-live.js'}
 
 for name, expected in manifest['files'].items():
     path = docs / name
