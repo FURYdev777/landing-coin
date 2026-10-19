@@ -1,4 +1,4 @@
 User-agent: *
-Disallow: /
-# Owner-private review environment. Keep authentication and noindex headers.
+Allow: /
+
 Sitemap: https://landingcoin.fun/sitemap.xml
