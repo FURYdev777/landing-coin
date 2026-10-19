@@ -16,7 +16,7 @@ class Parser(HTMLParser):
  def handle_startendtag(self,t,a):self.nodes.append((t,dict(a)))
 titles=[];descriptions=[]
 manifest=json.loads((BASE.parent/'redesign/source-manifest.json').read_text())
-for f in [BASE/p for p in manifest['files'] if p.endswith('.html')]:
+for f in [BASE/p for p in manifest['files'] if p.endswith('.html') and p != 'review.html']:
  source=f.read_text();p=Parser();p.feed(source);ids=[a['id']for t,a in p.nodes if'id'in a]
  assert not p.errors and not p.stack,(f.name,p.errors,p.stack)
  assert len(ids)==len(set(ids)),(f.name,'duplicate IDs')
@@ -52,7 +52,9 @@ with zipfile.ZipFile(BASE/'assets/LANDING-media-kit.zip')as z:assert z.testzip()
 faq=(BASE/'faq.html').read_text();data=json.loads(re.search(r'<script type="application/ld\+json">(.*?)</script>',faq,re.S)[1]);schema=next(x for x in data['@graph']if 'FAQPage' in (x['@type'] if isinstance(x['@type'],list) else [x['@type']]));assert len(schema['mainEntity'])==17
 for item in schema['mainEntity']:assert item['name']in faq and item['acceptedAnswer']['text'].replace('’','’')in __import__('html').unescape(faq)
 for name in ['privacy.html','cookie-policy.html','terms-of-service.html']:
- assert 'PREPARED FOR FINAL OWNER REVIEW'in(BASE/name).read_text()
- assert 'Source required.'not in(BASE/name).read_text()
+ source=(BASE/name).read_text()
+ assert 'CURRENT POLICY'in source
+ assert 'PREPARED FOR FINAL OWNER REVIEW'not in source
+ assert 'Source required.'not in source
 assert 'DESIGN EXAMPLE / 001'not in(BASE/'index.html').read_text(),'No simulated public Wall posts'
-print(f'PASS: {len(pages)} HTML pages, unique metadata, internal links/assets/anchors, ARIA, schemas, 17 visible FAQ answers, sitemap/RSS, media ZIP, official socials and three explicit legal review drafts.')
+print(f'PASS: {len(pages)} production HTML pages, unique metadata, internal links/assets/anchors, ARIA, schemas, 17 visible FAQ answers, sitemap/RSS, media ZIP, official socials and three current legal policy pages.')
