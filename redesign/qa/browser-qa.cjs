@@ -120,6 +120,13 @@ const results = [];
         assert.equal(geometry.overlap, false, `${width}: card overlap`);
       }
       await checkCardLayout();
+      const frontSize = await page.locator('#registered-card-front').evaluate(el => ({w:el.clientWidth,h:el.clientHeight}));
+      assert(Math.abs(frontSize.w/frontSize.h - 85.6/53.98) < .01, 'credit-card ratio');
+      await page.locator('#live-card-flip').click();
+      const backSize = await page.locator('#registered-card-back').evaluate(el => ({w:el.clientWidth,h:el.clientHeight,overflow:el.scrollHeight>el.clientHeight+1}));
+      assert.deepEqual(backSize, {...frontSize,overflow:false}, 'equal front/back sizes');
+      await page.locator('#registered-card-back').screenshot({path:path.join(output, `${width}-certified-lander-back.png`)});
+      await page.locator('#live-card-flip').click();
       await page.locator('#registered-card-front').screenshot({path:path.join(output, `${width}-certified-lander-card.png`)});
       const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#download-card').click()]);
       assert.equal(download.suggestedFilename(), 'certified-lander-0042-example-lander.png');

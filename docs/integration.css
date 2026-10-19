@@ -65,3 +65,43 @@
 @media(max-width:760px){.registered-card{width:100%;max-width:560px;padding:22px;min-height:0}.registered-card h3{font-size:45px}.registered-card-footer{margin:14px -22px -22px!important;padding:11px 22px}.registered-back{min-height:470px}}
 @media(max-width:410px){.registered-card{padding:18px}.registered-brand{font-size:8px;letter-spacing:.12em}.registered-verify{font-size:5px}.registered-card h3{font-size:41px}.registered-details{gap:13px}.registered-details dd{font-size:11px}.registered-card-footer{margin:14px -18px -18px!important;padding:11px 18px}.registered-id-block strong{font-size:26px}}
 @media(min-width:761px) and (max-width:1000px){.generator-grid{grid-template-columns:1fr}.generator-grid .real-card-stage{width:100%;max-width:560px;justify-self:center}}
+
+/* Equal ID-1 credit-card proportions for both faces. */
+#lander-card{container-type:inline-size;width:100%}
+#lander-card .registered-card{width:100%;max-width:none;min-height:0;height:auto;aspect-ratio:85.6 / 53.98;padding:4cqw;border-radius:1.6cqw;display:flex;flex-direction:column;gap:0;margin:0}
+#lander-card .registered-card[hidden]{display:none}
+#lander-card .registered-card-top{font-size:1.2cqw;gap:2cqw}
+#lander-card .registered-brand{font-size:1.65cqw;gap:1cqw}
+#lander-card .registered-brand svg{width:2.8cqw;height:2.8cqw}
+#lander-card .registered-verify{font-size:1cqw;padding:.5cqw .8cqw;gap:.8cqw}
+#lander-card .registered-verify i{width:.8cqw;height:.8cqw}
+#lander-card .registered-card-main{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:3cqw;margin-top:3cqw}
+#lander-card .registered-kicker{font-size:1.1cqw}
+#lander-card .registered-card h3{font-size:7.5cqw;line-height:1.02;margin-top:.8cqw}
+#lander-card .registered-id-block{display:block;max-width:34cqw;text-align:right}
+#lander-card .registered-id-block span{font-size:1.2cqw}
+#lander-card .registered-id-block strong{display:block;font-size:4.6cqw;line-height:1.15;margin-top:.7cqw}
+#lander-card .registered-holder{margin-top:2.5cqw}
+#lander-card .registered-holder span{font-size:1.1cqw}
+#lander-card .registered-holder strong{font-size:2.5cqw;line-height:1.2;margin-top:.6cqw;min-height:3cqw}
+#lander-card .registered-details{grid-template-columns:1.2fr 1fr 1fr 1fr;gap:2cqw;margin-top:2.5cqw;padding-top:2cqw}
+#lander-card .registered-details dt{font-size:1.05cqw;line-height:1.5}
+#lander-card .registered-details dd{font-size:1.8cqw;line-height:1.4;margin:.6cqw 0 0}
+#lander-card .registered-proof{margin-top:auto;padding-top:1.5cqw;font-size:1.05cqw!important;line-height:1.5!important;gap:1cqw}
+#lander-card .registered-card-footer{margin:1.6cqw -4cqw -4cqw!important;padding:1.5cqw 4cqw;font-size:.95cqw!important;line-height:1.5!important}
+#lander-card .registered-front::before{width:35cqw;height:35cqw;right:-10cqw;top:8cqw}
+#lander-card .registered-front::after{width:22cqw;height:22cqw;right:-3.5cqw;top:14.5cqw}
+#lander-card .registered-back-mark img{width:6cqw;height:6cqw}
+#lander-card .registered-back-mark span{font-size:1.15cqw}
+#lander-card .registered-back h3{font-size:6cqw;line-height:1.05;margin-top:2cqw}
+#lander-card .registered-back p{font-size:1.8cqw;line-height:1.5;margin-top:2cqw}
+#lander-card .registered-back-proof{gap:2cqw;margin-top:auto;padding-top:2cqw}
+#lander-card .registered-back-proof span{font-size:1.1cqw}
+#lander-card .registered-back-proof strong{font-size:4.6cqw}
+#lander-card .registered-front{padding-bottom:8cqw}
+#lander-card .registered-card-main{margin-top:2cqw}
+#lander-card .registered-front h3{font-size:6.8cqw}
+#lander-card .registered-holder{margin-top:2cqw}
+#lander-card .registered-holder strong{font-size:2.3cqw}
+#lander-card .registered-details{margin-top:2cqw;padding-top:1.6cqw}
+#lander-card .registered-card-footer{position:absolute;left:0;right:0;bottom:0;margin:0!important}
