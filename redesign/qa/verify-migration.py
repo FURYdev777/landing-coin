@@ -14,7 +14,10 @@ for name, target in manifest['redirects'].items():
     destination = root / 'docs' / (target.lstrip('/') + ('index.html' if target.endswith('/') else ''))
     assert destination.exists(), (name, target)
 for file in (root / 'docs').rglob('*.js'):
-    subprocess.run(['node', '--check', str(file)], check=True)
+    if file.name == 'wallet-standard.js':
+        subprocess.run(['node', '--input-type=module', '--check'], input=file.read_text(), text=True, check=True)
+    else:
+        subprocess.run(['node', '--check', str(file)], check=True)
 for original, snapshot in [('wall.js', 'branch-wall.js'), ('lander.js', 'branch-lander.js')]:
     assert (root/'redesign/content/upstream'/original).read_text().strip() == (root/'redesign/content'/snapshot).read_text().strip(), original
 assert 'Disallow: /' in (root/'docs/robots.txt').read_text()
