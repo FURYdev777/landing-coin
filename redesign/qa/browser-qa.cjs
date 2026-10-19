@@ -39,7 +39,7 @@ const results = [];
         return route.abort();
       });
       const page = await context.newPage();
-      for (const name of Object.keys(manifest.files).filter(n => n.endsWith('.html'))) {
+      for (const name of Object.keys(manifest.files).filter(n => n.endsWith('.html') && n !== 'review.html')) {
         const route = '/' + name.replace(/index\.html$/, '');
         const errors = [];
         const listener = error => errors.push(error.message);
@@ -52,11 +52,13 @@ const results = [];
           overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
           h1: document.querySelectorAll('h1').length,
           noindex: document.querySelector('meta[name="robots"]')?.content.includes('noindex'),
+          privateReviewLabel: document.body.innerText.includes('PRIVATE REVIEW BUILD') || document.body.innerText.includes('PRIVATE REVIEW /'),
           brokenImages: [...document.images].filter(x => x.complete && !x.naturalWidth).map(x => x.src)
         }));
         assert.equal(info.overflow, false, `${width} ${route}: horizontal overflow`);
         assert.equal(info.h1, 1, route);
-        assert(info.noindex, route);
+        assert.equal(info.noindex, name === '404.html', `${width} ${route}: robots state`);
+        assert.equal(info.privateReviewLabel, false, `${width} ${route}: private review label`);
         assert.deepEqual(info.brokenImages, [], `${width} ${route}: broken images`);
         assert.deepEqual(errors, [], `${width} ${route}: runtime errors`);
         if (width <= 430) {
@@ -89,12 +91,12 @@ const results = [];
       await page.goto(origin + '/lander/');
       assert.equal(await page.locator('#download-card').isVisible(), false);
       for (const [alias, target] of Object.entries(manifest.redirects)) {
-        await page.goto(origin + '/' + alias + '?review=1#check');
-        await page.waitForURL(origin + target + '?review=1#check');
+        await page.goto(origin + '/' + alias + '?ref=1#check');
+        await page.waitForURL(origin + target + '?ref=1#check');
       }
       await context.close();
     }
     fs.writeFileSync(path.join(output, 'results.json'), JSON.stringify({status:'PASS',pages:results.length,widths:[1440,1024,768,430,390,360],results}, null, 2));
-    console.log(`PASS: ${results.length} rendered pages; six widths; no overflow, runtime errors or missing images; menus, FAQ, motion controls and aliases. External data is fixture-only; live wallet qualification is not asserted.`);
+    console.log(`PASS: ${results.length} production renderings; six widths; indexability state, no private review labels, no overflow, runtime errors or missing images; menus, FAQ, motion controls and aliases. External data is fixture-only; live wallet qualification is not asserted.`);
   } finally { await browser.close(); }
 })().catch(error => {fs.writeFileSync(path.join(output,'failure.txt'),error.stack); console.error(error); process.exitCode=1;}).finally(() => server.close());
