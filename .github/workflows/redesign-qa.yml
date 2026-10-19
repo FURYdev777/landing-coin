@@ -10,93 +10,45 @@ permissions:
   contents: read
 
 jobs:
-  static-qa:
+  static-and-flow-qa:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: JavaScript syntax
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python3 -m pip install lxml
+      - name: Install isolated QA dependencies
+        run: npm install --prefix "$RUNNER_TEMP/landing-qa" --no-save @solana/web3.js@1.98.4
+      - name: Source fidelity, routes and content
         run: |
-          node --check docs/app.js
-          node --check docs/descent.js
-
-      - name: HTML parse and local-link audit
+          python3 redesign/qa/verify-migration.py
+          python3 redesign/qa/verify-content.py
+          python3 redesign/qa/audit-final.py
+      - name: Offline wallet contracts and all-page startup
         run: |
-          python3 - <<'PY'
-          from html.parser import HTMLParser
-          from pathlib import Path
-          from urllib.parse import urlparse, unquote
-
-          root = Path("docs")
-          html_files = sorted(root.rglob("*.html"))
-          errors = []
-
-          class Checker(HTMLParser):
-              def __init__(self, path):
-                  super().__init__(convert_charrefs=True)
-                  self.path = path
-              def handle_starttag(self, tag, attrs):
-                  attrs = dict(attrs)
-                  for key in ("href", "src"):
-                      value = attrs.get(key)
-                      if not value or not value.startswith("/") or value.startswith("//"):
-                          continue
-                      parsed = urlparse(value)
-                      path = unquote(parsed.path)
-                      if path == "/":
-                          target = root / "index.html"
-                      else:
-                          rel = path.lstrip("/")
-                          target = root / rel
-                          if path.endswith("/"):
-                              target = target / "index.html"
-                          elif not target.suffix:
-                              candidate = target / "index.html"
-                              if candidate.exists():
-                                  target = candidate
-                      if not target.exists():
-                          errors.append(f"{self.path}: broken local {key} {value} -> {target}")
-
-          for path in html_files:
-              try:
-                  text = path.read_text(encoding="utf-8")
-                  parser = Checker(path)
-                  parser.feed(text)
-                  parser.close()
-              except Exception as exc:
-                  errors.append(f"{path}: parse error: {exc}")
-
-          if errors:
-              print("\n".join(errors))
-              raise SystemExit(1)
-
-          print(f"PASS: parsed {len(html_files)} HTML files; local root links resolve.")
-          PY
-
-      - name: Critical integrations still present
+          node redesign/qa/test-live-flows.cjs "$RUNNER_TEMP/landing-qa/node_modules/@solana/web3.js/lib/index.iife.min.js"
+          node redesign/qa/preproduction-dom-smoke.cjs
+  responsive-browser-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated browser QA dependencies
         run: |
-          grep -q "/api/wall/marks" docs/wall.html
-          grep -q "/api/wall/wallet" docs/wall.html
-          grep -q "/api/wall/blockhash" docs/wall.html
-          grep -q "/api/wall/status" docs/wall.html
-          grep -q "/api/claim" docs/lander/index.html
-          grep -q "/api/lander" docs/lander/index.html
-          grep -q "/api/transparency" docs/transparency.html
-          grep -q "5000000000n" docs/wall.html
-          grep -q "LANDING-WALL:v1:" docs/wall.html
-          grep -q "landingcoin.fun" docs/CNAME
-
-      - name: Required redesign routes
+          npm install --prefix "$RUNNER_TEMP/landing-qa" --no-save playwright@1.55.1 @solana/web3.js@1.98.4
+          node "$RUNNER_TEMP/landing-qa/node_modules/playwright/cli.js" install --with-deps chromium
+      - name: Render every page at six widths without live transactions
         run: |
-          test -f docs/about/index.html
-          test -f docs/buy/index.html
-          test -f docs/markets/index.html
-          test -f docs/tokenomics/index.html
-          test -f docs/routes/jupiter.html
-          test -f docs/routes/poloniex.html
-          test -f docs/community/index.html
-          test -f docs/faq/index.html
-          test -f docs/privacy/index.html
-          test -f docs/cookie/index.html
-          test -f docs/terms/index.html
+          export PLAYWRIGHT_MODULE="$RUNNER_TEMP/landing-qa/node_modules/playwright"
+          export WEB3_IIFE="$RUNNER_TEMP/landing-qa/node_modules/@solana/web3.js/lib/index.iife.min.js"
+          node redesign/qa/browser-qa.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: landing-redesign-browser-qa
+          path: redesign/qa-output/
+          retention-days: 14

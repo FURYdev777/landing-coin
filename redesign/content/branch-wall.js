@@ -1,0 +1,669 @@
+
+(function () {
+  'use strict';
+
+  const LANDING_MINT = new solanaWeb3.PublicKey('DLGLMB3imJqnAwKjxY8ZFXoF7CPfTbCNL3j3Ag5M5vGZ');
+  const RECIPIENT_OWNER = new solanaWeb3.PublicKey('F7Pio8v6YLwXbwRgQAH8Q7cMqsdaUX3mJeyFyTZbvhhT');
+  const TOKEN_PROGRAM_ID = new solanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+  const ASSOCIATED_TOKEN_PROGRAM_ID = new solanaWeb3.PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
+  const MEMO_PROGRAM_ID = new solanaWeb3.PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
+  const MARK_PRICE_RAW = 5000000000n;
+  const TOKEN_DECIMALS = 6;
+  const MEMO_PREFIX = 'LANDING-WALL:v1:';
+  const PAGE_SIZE = 25;
+  const WALL_API = 'https://landing-lander-registry.michelescalini.workers.dev';
+
+  // Add a transaction signature here if a Mark ever needs to be hidden from the website.
+  const HIDDEN_SIGNATURES = new Set([]);
+
+  const messageInput = document.getElementById('mark-message');
+  const charCount = document.getElementById('char-count');
+  const leaveButton = document.getElementById('leave-mark');
+  const connectButton = document.getElementById('connect-wallet');
+  const walletAddress = document.getElementById('wallet-address');
+  const walletBalance = document.getElementById('wallet-balance');
+  const walletModal = document.getElementById('wallet-modal');
+  const walletOptions = document.getElementById('wallet-options');
+  const walletClose = document.getElementById('wallet-close');
+  const markStatus = document.getElementById('mark-status');
+  const wall = document.getElementById('wall');
+  const wallCount = document.getElementById('wall-count');
+  const loadMoreButton = document.getElementById('load-more');
+
+  let connection = null;
+  let recipientAta = null;
+  let beforeSignature = null;
+  let marksShown = 0;
+  let loading = false;
+  let connectedWallet = null;
+  let connectedSourceAccount = null;
+  let connectedBalanceRaw = 0n;
+  let connectedWalletName = '';
+
+  function setStatus(message, state) {
+    markStatus.textContent = message;
+    markStatus.dataset.state = state || 'idle';
+  }
+
+  function normalizeMessage(value) {
+    return String(value || '')
+      .replace(/[\u0000-\u001f\u007f]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 140);
+  }
+
+  function containsLink(value) {
+    return /(?:https?:\/\/|www\.|t\.me\/|discord\.gg\/)/i.test(value);
+  }
+
+  function shortenWallet(value) {
+    if (!value || value.length < 12) return value || 'unknown';
+    return value.slice(0, 4) + '…' + value.slice(-4);
+  }
+
+  function formatDate(unixSeconds) {
+    if (!unixSeconds) return 'Solana';
+    return new Intl.DateTimeFormat('en', {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit'
+    }).format(new Date(unixSeconds * 1000));
+  }
+
+  function associatedTokenAddress(owner) {
+    return solanaWeb3.PublicKey.findProgramAddressSync(
+      [owner.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), LANDING_MINT.toBuffer()],
+      ASSOCIATED_TOKEN_PROGRAM_ID
+    )[0];
+  }
+
+  async function api(path) {
+    const response = await fetch(WALL_API + path, { cache: 'no-store' });
+    let payload = null;
+
+    try {
+      payload = await response.json();
+    } catch (error) {
+      throw new Error('LANDING network service returned an invalid response.');
+    }
+
+    if (!response.ok && response.status !== 202) {
+      throw new Error(payload && payload.message ? payload.message : 'LANDING network service is temporarily unavailable.');
+    }
+
+    return payload;
+  }
+
+  async function selectConnection() {
+    if (connection) return connection;
+    connection = new solanaWeb3.Connection(WALL_API + '/api/wall/rpc-disabled', 'confirmed');
+    return connection;
+  }
+
+  async function waitForWalletStandard() {
+    if (window.LandingWalletStandard) return window.LandingWalletStandard;
+
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      await new Promise(function (resolve) { window.setTimeout(resolve, 100); });
+      if (window.LandingWalletStandard) return window.LandingWalletStandard;
+    }
+
+    throw new Error('Wallet discovery did not load. Refresh the page and try again.');
+  }
+
+  async function renderWalletOptions() {
+    try {
+      const bridge = await waitForWalletStandard();
+      const wallets = bridge.list();
+
+      walletOptions.innerHTML = '';
+
+      if (!wallets.length) {
+        walletOptions.innerHTML = '<div class="wallet-none">No compatible Solana wallet was detected in this browser. You can install any Wallet Standard compatible Solana wallet, then reload this page.</div>';
+        return;
+      }
+
+      wallets.forEach(function (wallet) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'wallet-option';
+
+        if (wallet.icon) {
+          const img = document.createElement('img');
+          img.src = wallet.icon;
+          img.alt = '';
+          button.appendChild(img);
+        }
+
+        const label = document.createElement('span');
+        label.textContent = wallet.name;
+        button.appendChild(label);
+
+        button.addEventListener('click', function () {
+          connectSelectedWallet(wallet.name);
+        });
+
+        walletOptions.appendChild(button);
+      });
+    } catch (error) {
+      walletOptions.innerHTML = '<div class="wallet-none">Wallet discovery is temporarily unavailable. Refresh the page and try again.</div>';
+    }
+  }
+
+  function openWalletModal() {
+    walletModal.hidden = false;
+    renderWalletOptions();
+  }
+
+  function closeWalletModal() {
+    walletModal.hidden = true;
+  }
+
+  function encodeTransferChecked(amount, decimals) {
+    const data = new Uint8Array(10);
+    data[0] = 12;
+    let value = BigInt(amount);
+
+    for (let index = 0; index < 8; index += 1) {
+      data[1 + index] = Number(value & 255n);
+      value >>= 8n;
+    }
+
+    data[9] = decimals;
+    return data;
+  }
+
+  function createAtaIdempotentInstruction(payer, ata) {
+    return new solanaWeb3.TransactionInstruction({
+      programId: ASSOCIATED_TOKEN_PROGRAM_ID,
+      keys: [
+        { pubkey: payer, isSigner: true, isWritable: true },
+        { pubkey: ata, isSigner: false, isWritable: true },
+        { pubkey: RECIPIENT_OWNER, isSigner: false, isWritable: false },
+        { pubkey: LANDING_MINT, isSigner: false, isWritable: false },
+        { pubkey: solanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false },
+        { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false }
+      ],
+      data: Uint8Array.from([1])
+    });
+  }
+
+  function createTransferInstruction(source, destination, owner) {
+    return new solanaWeb3.TransactionInstruction({
+      programId: TOKEN_PROGRAM_ID,
+      keys: [
+        { pubkey: source, isSigner: false, isWritable: true },
+        { pubkey: LANDING_MINT, isSigner: false, isWritable: false },
+        { pubkey: destination, isSigner: false, isWritable: true },
+        { pubkey: owner, isSigner: true, isWritable: false }
+      ],
+      data: encodeTransferChecked(MARK_PRICE_RAW, TOKEN_DECIMALS)
+    });
+  }
+
+  function createMemoInstruction(message, signer) {
+    return new solanaWeb3.TransactionInstruction({
+      programId: MEMO_PROGRAM_ID,
+      keys: [{ pubkey: signer, isSigner: true, isWritable: false }],
+      data: new TextEncoder().encode(MEMO_PREFIX + message)
+    });
+  }
+
+  function formatLandingRaw(raw) {
+    const base = 1000000n;
+    const whole = raw / base;
+    const fraction = (raw % base).toString().padStart(6, '0').replace(/0+$/, '');
+    const value = fraction ? whole.toString() + '.' + fraction : whole.toString();
+    return new Intl.NumberFormat('en-US', { maximumFractionDigits: 6 }).format(Number(value));
+  }
+
+  function resetWalletUi() {
+    connectedWallet = null;
+    connectedSourceAccount = null;
+    connectedBalanceRaw = 0n;
+    connectedWalletName = '';
+    walletAddress.textContent = 'Wallet not connected';
+    walletBalance.textContent = 'LANDING balance: —';
+    connectButton.textContent = 'Connect Wallet';
+    leaveButton.disabled = true;
+    setStatus('Connect your wallet to leave a Mark.');
+  }
+
+  async function refreshConnectedWallet(payer) {
+    const payload = await api('/api/wall/wallet?wallet=' + encodeURIComponent(payer.toBase58()));
+    const total = BigInt(payload.totalRaw || '0');
+
+    connectedWallet = payer;
+    connectedSourceAccount = payload.sourceTokenAccount
+      ? new solanaWeb3.PublicKey(payload.sourceTokenAccount)
+      : null;
+    connectedBalanceRaw = total;
+
+    walletAddress.textContent = shortenWallet(payer.toBase58());
+    walletAddress.title = payer.toBase58();
+    walletBalance.textContent = 'LANDING balance: ' + formatLandingRaw(total);
+    connectButton.textContent = 'Connected';
+
+    if (payer.toBase58() === RECIPIENT_OWNER.toBase58()) {
+      leaveButton.disabled = true;
+      setStatus('The receiving wallet cannot create a paid Mark for itself.', 'error');
+      return;
+    }
+
+    if (!connectedSourceAccount) {
+      leaveButton.disabled = true;
+      setStatus('This wallet needs at least 5,000 LANDING to leave a Mark.', 'error');
+      return;
+    }
+
+    leaveButton.disabled = false;
+    setStatus('Wallet connected. Write your message and leave your Mark.', 'success');
+  }
+
+  async function connectSelectedWallet(walletName) {
+    connectButton.disabled = true;
+
+    try {
+      setStatus('Connecting ' + walletName + '…');
+      const bridge = await waitForWalletStandard();
+      const connected = await bridge.connect(walletName);
+      const payer = new solanaWeb3.PublicKey(connected.address);
+
+      connectedWalletName = connected.name || walletName;
+      connectButton.textContent = connectedWalletName;
+      closeWalletModal();
+      await refreshConnectedWallet(payer);
+    } catch (error) {
+      console.error('Unable to connect wallet:', error);
+      resetWalletUi();
+      setStatus(error instanceof Error ? error.message : 'Unable to connect the wallet.', 'error');
+    } finally {
+      connectButton.disabled = false;
+    }
+  }
+
+  async function connectWallet() {
+    openWalletModal();
+  }
+
+  async function leaveMark() {
+    const message = normalizeMessage(messageInput.value);
+
+    if (!message) {
+      setStatus('Write something on the post-it first.', 'error');
+      messageInput.focus();
+      return;
+    }
+
+    if (containsLink(message)) {
+      setStatus('The LANDING Wall is text-only. Links are not accepted.', 'error');
+      return;
+    }
+
+    if (!connectedWallet || !connectedSourceAccount || !connectedWalletName) {
+      setStatus('Connect a wallet with at least 5,000 LANDING first.', 'error');
+      return;
+    }
+
+    leaveButton.disabled = true;
+
+    try {
+      const payer = connectedWallet;
+      const state = await api('/api/wall/wallet?wallet=' + encodeURIComponent(payer.toBase58()));
+      const total = BigInt(state.totalRaw || '0');
+
+      if (!state.sourceTokenAccount) {
+        connectedSourceAccount = null;
+        connectedBalanceRaw = total;
+        walletBalance.textContent = 'LANDING balance: ' + formatLandingRaw(total);
+        throw new Error('This wallet no longer has 5,000 LANDING available.');
+      }
+
+      connectedSourceAccount = new solanaWeb3.PublicKey(state.sourceTokenAccount);
+      connectedBalanceRaw = total;
+      walletBalance.textContent = 'LANDING balance: ' + formatLandingRaw(total);
+
+      const source = connectedSourceAccount;
+      const destination = associatedTokenAddress(RECIPIENT_OWNER);
+
+      setStatus('Preparing the 5,000 LANDING transaction…');
+
+      const transaction = new solanaWeb3.Transaction();
+
+      transaction.add(createAtaIdempotentInstruction(payer, destination));
+      transaction.add(createTransferInstruction(source, destination, payer));
+      transaction.add(createMemoInstruction(message, payer));
+
+      const latest = await api('/api/wall/blockhash');
+      transaction.recentBlockhash = latest.blockhash;
+      transaction.feePayer = payer;
+
+      setStatus('Check the transaction in your wallet. The message will be public once signed.');
+
+      const bridge = await waitForWalletStandard();
+      const signatureBytes = await bridge.send(transaction);
+      const signature = base58Encode(signatureBytes);
+
+      if (!signature) throw new Error('The wallet did not return a transaction signature.');
+
+      setStatus('Transaction sent. Waiting for final confirmation…');
+
+      let confirmed = false;
+      for (let attempt = 0; attempt < 60; attempt += 1) {
+        const status = await api('/api/wall/status?signature=' + encodeURIComponent(signature));
+        if (status.status === 'confirmed') {
+          confirmed = true;
+          break;
+        }
+        if (status.status === 'invalid') {
+          throw new Error(status.message || 'The transaction failed on-chain.');
+        }
+        await new Promise(function (resolve) { window.setTimeout(resolve, 2000); });
+      }
+
+      if (!confirmed) {
+        throw new Error('Confirmation is taking longer than expected. Check the transaction in your wallet and reload the Wall.');
+      }
+
+      messageInput.value = '';
+      charCount.textContent = '0 / 140';
+      setStatus('Mark confirmed. It is now part of the LANDING Wall.', 'success');
+
+      await new Promise(function (resolve) { window.setTimeout(resolve, 1200); });
+      await loadNewest();
+    } catch (error) {
+      console.error('Unable to leave LANDING Wall Mark:', error);
+      setStatus(error instanceof Error ? error.message : 'Unable to create the Mark. Please try again.', 'error');
+    } finally {
+      if (connectedSourceAccount) leaveButton.disabled = false;
+    }
+  }
+
+  const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+
+  function base58Encode(bytes) {
+    if (!bytes || !bytes.length) return '';
+
+    const digits = [0];
+    for (let i = 0; i < bytes.length; i += 1) {
+      let carry = bytes[i];
+      for (let j = 0; j < digits.length; j += 1) {
+        carry += digits[j] << 8;
+        digits[j] = carry % 58;
+        carry = Math.floor(carry / 58);
+      }
+      while (carry > 0) {
+        digits.push(carry % 58);
+        carry = Math.floor(carry / 58);
+      }
+    }
+
+    let result = '';
+    for (let i = 0; i < bytes.length - 1 && bytes[i] === 0; i += 1) result += '1';
+    for (let i = digits.length - 1; i >= 0; i -= 1) result += BASE58_ALPHABET[digits[i]];
+    return result;
+  }
+
+  function base58Decode(value) {
+    if (!value) return new Uint8Array(0);
+    const bytes = [0];
+
+    for (let i = 0; i < value.length; i += 1) {
+      const digit = BASE58_ALPHABET.indexOf(value[i]);
+      if (digit < 0) return new Uint8Array(0);
+
+      let carry = digit;
+      for (let j = 0; j < bytes.length; j += 1) {
+        carry += bytes[j] * 58;
+        bytes[j] = carry & 255;
+        carry >>= 8;
+      }
+
+      while (carry > 0) {
+        bytes.push(carry & 255);
+        carry >>= 8;
+      }
+    }
+
+    for (let i = 0; i < value.length - 1 && value[i] === '1'; i += 1) {
+      bytes.push(0);
+    }
+
+    return Uint8Array.from(bytes.reverse());
+  }
+
+  function extractMemo(transaction) {
+    const instructions = transaction && transaction.transaction && transaction.transaction.message
+      ? transaction.transaction.message.instructions || []
+      : [];
+
+    for (const instruction of instructions) {
+      if (instruction && instruction.program === 'spl-memo' && typeof instruction.parsed === 'string') {
+        if (instruction.parsed.indexOf(MEMO_PREFIX) === 0) return instruction.parsed.slice(MEMO_PREFIX.length);
+      }
+
+      const programId = instruction && instruction.programId && typeof instruction.programId.toBase58 === 'function'
+        ? instruction.programId.toBase58()
+        : '';
+
+      if (programId === MEMO_PROGRAM_ID.toBase58() && typeof instruction.data === 'string') {
+        try {
+          const decoded = new TextDecoder().decode(base58Decode(instruction.data));
+          if (decoded.indexOf(MEMO_PREFIX) === 0) return decoded.slice(MEMO_PREFIX.length);
+        } catch (error) {
+          console.warn('Unable to decode memo:', error);
+        }
+      }
+    }
+
+    return '';
+  }
+
+  function tokenOwnerDeltas(meta) {
+    const byIndex = new Map();
+    const deltas = new Map();
+    const pre = meta && Array.isArray(meta.preTokenBalances) ? meta.preTokenBalances : [];
+    const post = meta && Array.isArray(meta.postTokenBalances) ? meta.postTokenBalances : [];
+
+    pre.forEach(function (item) {
+      if (item.mint !== LANDING_MINT.toBase58()) return;
+      byIndex.set(item.accountIndex, {
+        pre: BigInt(item.uiTokenAmount && item.uiTokenAmount.amount ? item.uiTokenAmount.amount : '0'),
+        post: 0n,
+        owner: item.owner || ''
+      });
+    });
+
+    post.forEach(function (item) {
+      if (item.mint !== LANDING_MINT.toBase58()) return;
+      const row = byIndex.get(item.accountIndex) || { pre: 0n, post: 0n, owner: item.owner || '' };
+      row.post = BigInt(item.uiTokenAmount && item.uiTokenAmount.amount ? item.uiTokenAmount.amount : '0');
+      if (item.owner) row.owner = item.owner;
+      byIndex.set(item.accountIndex, row);
+    });
+
+    byIndex.forEach(function (row) {
+      if (!row.owner) return;
+      deltas.set(row.owner, (deltas.get(row.owner) || 0n) + (row.post - row.pre));
+    });
+
+    return deltas;
+  }
+
+  function markFromTransaction(signatureInfo, transaction) {
+    if (!transaction || !transaction.meta || transaction.meta.err) return null;
+    if (HIDDEN_SIGNATURES.has(signatureInfo.signature)) return null;
+
+    const message = normalizeMessage(extractMemo(transaction));
+    if (!message || containsLink(message)) return null;
+
+    const deltas = tokenOwnerDeltas(transaction.meta);
+    const received = deltas.get(RECIPIENT_OWNER.toBase58()) || 0n;
+    if (received < MARK_PRICE_RAW) return null;
+
+    let payer = '';
+    let payerDelta = 0n;
+    deltas.forEach(function (delta, owner) {
+      if (delta < payerDelta) {
+        payer = owner;
+        payerDelta = delta;
+      }
+    });
+
+    if (!payer || -payerDelta < MARK_PRICE_RAW) return null;
+
+    return {
+      signature: signatureInfo.signature,
+      message: message,
+      wallet: payer,
+      blockTime: transaction.blockTime || signatureInfo.blockTime || null
+    };
+  }
+
+  function styleForSignature(signature) {
+    let hash = 0;
+    for (let i = 0; i < signature.length; i += 1) {
+      hash = ((hash << 5) - hash + signature.charCodeAt(i)) | 0;
+    }
+
+    const colors = ['var(--yellow)', 'var(--pink)', 'var(--blue)', 'var(--green)'];
+    const color = colors[Math.abs(hash) % colors.length];
+    const rotation = ((Math.abs(hash >> 3) % 9) - 4) * 0.55;
+
+    return { color: color, rotation: rotation };
+  }
+
+  function renderMark(mark, prepend) {
+    const style = styleForSignature(mark.signature);
+    const note = document.createElement('article');
+    note.className = 'sticky';
+    note.style.setProperty('--note', style.color);
+    note.style.setProperty('--rot', style.rotation + 'deg');
+
+    const tag = document.createElement('div');
+    tag.className = 'sticky-tag';
+    tag.textContent = 'LANDING MARK';
+
+    const copy = document.createElement('p');
+    copy.textContent = mark.message;
+
+    const meta = document.createElement('div');
+    meta.className = 'sticky-meta';
+
+    const wallet = document.createElement('span');
+    wallet.textContent = shortenWallet(mark.wallet);
+
+    const date = document.createElement('span');
+    date.textContent = formatDate(mark.blockTime);
+
+    meta.appendChild(wallet);
+    meta.appendChild(date);
+    note.appendChild(tag);
+    note.appendChild(copy);
+    note.appendChild(meta);
+
+    if (prepend && wall.firstChild) wall.insertBefore(note, wall.firstChild);
+    else wall.appendChild(note);
+  }
+
+  async function fetchTransactionsInChunks(conn, signatures) {
+    const transactions = [];
+
+    for (let start = 0; start < signatures.length; start += 10) {
+      const chunk = signatures.slice(start, start + 10);
+      const result = await conn.getParsedTransactions(chunk, {
+        commitment: 'confirmed',
+        maxSupportedTransactionVersion: 0
+      });
+      transactions.push.apply(transactions, result);
+    }
+
+    return transactions;
+  }
+
+  async function loadPage(reset) {
+    if (loading) return;
+    loading = true;
+    loadMoreButton.disabled = true;
+
+    try {
+      const query = new URLSearchParams();
+      query.set('limit', String(PAGE_SIZE));
+      if (!reset && beforeSignature) query.set('before', beforeSignature);
+
+      const payload = await api('/api/wall/marks?' + query.toString());
+
+      if (reset) {
+        wall.innerHTML = '';
+        marksShown = 0;
+        beforeSignature = null;
+      }
+
+      const marks = Array.isArray(payload.marks) ? payload.marks : [];
+
+      marks.forEach(function (mark) {
+        renderMark(mark, false);
+        marksShown += 1;
+      });
+
+      beforeSignature = payload.nextBefore || null;
+      loadMoreButton.hidden = !payload.hasMore;
+      wallCount.textContent = marksShown + ' Mark' + (marksShown === 1 ? '' : 's') + ' loaded';
+
+      if (!marksShown) {
+        wall.innerHTML = '<div class="wall-empty">No Marks yet. The first post-it is still waiting for someone to leave it.</div>';
+        wallCount.textContent = 'No Marks yet';
+      }
+    } catch (error) {
+      console.error('Unable to read LANDING Wall:', error);
+      if (!marksShown) {
+        wall.innerHTML = '<div class="wall-empty">The Wall could not be read from Solana right now. Try again in a moment.</div>';
+      }
+      wallCount.textContent = 'Network service temporarily unavailable';
+      loadMoreButton.hidden = true;
+    } finally {
+      loading = false;
+      loadMoreButton.disabled = false;
+    }
+  }
+
+  async function loadNewest() {
+    await loadPage(true);
+  }
+
+  messageInput.addEventListener('input', function () {
+    const normalizedLength = messageInput.value.length;
+    charCount.textContent = normalizedLength + ' / 140';
+  });
+
+  connectButton.addEventListener('click', connectWallet);
+  leaveButton.addEventListener('click', leaveMark);
+  loadMoreButton.addEventListener('click', function () { loadPage(false); });
+
+  walletClose.addEventListener('click', closeWalletModal);
+  walletModal.addEventListener('click', function (event) {
+    if (event.target === walletModal) closeWalletModal();
+  });
+  window.addEventListener('landing-wallets-changed', function () {
+    if (!walletModal.hidden) renderWalletOptions();
+  });
+  window.addEventListener('landing-wallet-account-changed', function (event) {
+    const address = event.detail && event.detail.address;
+    if (!address) {
+      resetWalletUi();
+      return;
+    }
+
+    try {
+      refreshConnectedWallet(new solanaWeb3.PublicKey(address)).catch(function (error) {
+        console.error('Unable to refresh changed wallet:', error);
+        resetWalletUi();
+      });
+    } catch (error) {
+      resetWalletUi();
+    }
+  });
+
+  loadNewest();
+})();

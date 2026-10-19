@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="/news/rss.xsl"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+  <title>LANDING Coin News</title>
+  <link>https://landingcoin.fun/news/</link>
+  <description>Official LANDING Coin news, listings, project updates and milestones.</description>
+  <language>en</language>
+  <lastBuildDate>Wed, 07 Oct 2026 06:30:00 GMT</lastBuildDate>
+  <atom:link href="https://landingcoin.fun/news/feed.xml" rel="self" type="application/rss+xml"/>
+  <item>
+    <title>LANDING Coin Discord Community Is Now Open</title>
+    <link>https://landingcoin.fun/news/landing-coin-discord-community.html</link>
+    <guid isPermaLink="true">https://landingcoin.fun/news/landing-coin-discord-community.html</guid>
+    <pubDate>Wed, 07 Oct 2026 06:30:00 GMT</pubDate>
+    <description>The official LANDING Discord server is live, adding a structured community space for project updates, organized discussions and conversations with other Landers.</description>
+  </item>
+  <item>
+    <title>From the LANDING Wall to a Future LANDING Merch Store</title>
+    <link>https://landingcoin.fun/news/landing-wall-and-future-merch-store.html</link>
+    <guid isPermaLink="true">https://landingcoin.fun/news/landing-wall-and-future-merch-store.html</guid>
+    <pubDate>Fri, 25 Sep 2026 08:00:00 GMT</pubDate>
+    <description>The LANDING Wall is live on Solana, while the project explores future community utility including branded merchandise and a possible LANDING-powered checkout flow.</description>
+  </item>
+  <item>
+    <title>LANDING Coin (LANDING) Listed on Poloniex</title>
+    <link>https://landingcoin.fun/news/landing-coin-poloniex-listing.html</link>
+    <guid isPermaLink="true">https://landingcoin.fun/news/landing-coin-poloniex-listing.html</guid>
+    <pubDate>Mon, 21 Sep 2026 07:40:00 GMT</pubDate>
+    <description>LANDING/USDT spot trading starts September 21, 2026 at 12:00 UTC, adding a centralized trading venue alongside LANDING's existing Solana market.</description>
+  </item>
+</channel>
+</rss>
