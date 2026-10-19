@@ -20,6 +20,7 @@ def assert_schema(d,route):
 for route in CORE+ARTICLES:
  d=html.fromstring(file(route).read_text());assert d.get('lang')=='en';assert len(d.xpath('//main'))==1
  assert len(d.xpath('//h1'))==1
+ robots=d.xpath('//meta[@name="robots"]')[0].get('content');assert 'noindex' not in robots,(route,robots)
  assert d.xpath('//link[@rel="canonical"]')[0].get('href')==ORIGIN+route
  desc=d.xpath('//meta[@name="description"]')[0].get('content');assert desc and len(desc)>20
  for prop in ['og:title','og:description','og:type','og:url','og:image','og:image:alt','og:site_name']:
@@ -55,7 +56,7 @@ while pending:
   if target in CORE+ARTICLES and target not in visited:pending.append(target)
 assert set(CORE)<=visited
 urls={e.text for e in ET.parse(P/'sitemap.xml').iter()if e.tag.endswith('}loc')}
-assert urls=={ORIGIN+x for x in CORE+ARTICLES if x not in ['/privacy.html','/cookie-policy.html','/terms-of-service.html']}
+assert urls=={ORIGIN+x for x in CORE+ARTICLES}
 
 # Exact original article bodies and publication dates survive the presentation migration.
 for key,route in zip(['discordArticle','wallArticle','poloArticle'],ARTICLES):
@@ -84,5 +85,7 @@ for f in ['motion.css','site.css','experiences.css','integration.css']:assert 'p
 for f in P.rglob('*.html'):
  s=f.read_text();assert 'Wallet transactions and Lander registration continue on the official site.'not in s
  assert 'LandingCoinFun'not in s
-print('PASS: all 19 pages plus three articles; routes/navigation; metadata/Open Graph/canonicals/schemas; labels/alt/button names; exact news bodies/dates; five factual phases; source ZIP/RSS; reduced-motion safeguards.')
-print('RELEASE NOTES: source legal review labels and noindex retained; no deployment.')
+assert 'Allow: /' in (P/'robots.txt').read_text() and 'Disallow: /' not in (P/'robots.txt').read_text()
+assert not (P/'review.html').exists()
+print('PASS: all 19 pages plus three articles are production-indexable; routes/navigation; metadata/Open Graph/canonicals/schemas; labels/alt/button names; exact news bodies/dates; five factual phases; source ZIP/RSS; reduced-motion safeguards; private review utility removed.')
+print('RELEASE NOTES: production metadata and crawl policy prepared; no merge or deployment performed.')
