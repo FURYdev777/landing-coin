@@ -89,7 +89,9 @@ const results = [];
       await page.goto(origin + '/wall.html');
       assert.equal(await page.locator('#leave-mark').isDisabled(), true);
       await page.goto(origin + '/lander/');
-      assert.equal(await page.locator('#download-card').isVisible(), false);
+      assert.equal(await page.locator('#download-card').isVisible(), true);
+      assert.equal(await page.locator('#download-card').isDisabled(), true);
+      assert.equal(await page.locator('#lander-card').getAttribute('data-certification'), 'preview');
       for (const [alias, target] of Object.entries(manifest.redirects)) {
         await page.goto(origin + '/' + alias + '?ref=1#check');
         await page.waitForURL(origin + target + '?ref=1#check');
