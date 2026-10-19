@@ -88,7 +88,7 @@ async function wallTests(){
 }
 async function landerTests(){
  let mode='waiting',resolveClaim,canvasCalls=0,initOptions;const calls=[];
- const fixture={id:42,wallet:WALLET,balanceRaw:'123456789',signature:'TEST-ONLY-RECORD'};
+ const fixture={id:42,wallet:WALLET,balanceRaw:'123456789',signature:'A'.repeat(88),confirmedSlot:345678901,createdAt:'2026-10-19 12:00:00'};
  const env=environment('lander/index.html',async(url,options={})=>{
   calls.push({url,options});assert(url.startsWith(API));
   if(url.includes('/api/lander?'))return mode==='not-found'?Response.json({status:'not_found'},{status:404}):Response.json({status:'confirmed',lander:fixture});
@@ -100,21 +100,21 @@ async function landerTests(){
  env.window.Jupiter={init:o=>{initOptions=o},resume(){},close(){}};
  env.context.html2canvas=async node=>{canvasCalls++;assert.equal(node.id,'registered-card-front');assert.equal(node.hidden,false,'Download captures the visible certified front even when reverse is selected');return {toDataURL:()=> 'data:image/png;base64,TEST_ONLY'}};
  compile(env,'docs/lander-live.js',s=>s.replace('  updateCard();\n  restoreLander();','  globalThis.landerTest = {verifyAndClaim, applyLander, rawLandingToDecimal, formatLanderId};\n  updateCard();\n  restoreLander();'));
- const api=env.context.landerTest;assert.equal(env.nodes.get('download-card').hidden,true);
- await env.nodes.get('download-card').emit('click');assert.equal(canvasCalls,0,'No unissued real-card download');
+ const api=env.context.landerTest;assert.equal(env.nodes.get('download-card').hidden,false);assert.equal(env.nodes.get('download-card').disabled,true);
+ await env.nodes.get('download-card').emit('click');assert.equal(canvasCalls,0,'No unissued real-card download');assert.equal(env.nodes.get('download-card').disabled,true);
  await env.nodes.get('buy-landing').emit('click');assert.equal(initOptions.formProps.initialOutputMint,MINT);assert.equal(initOptions.formProps.fixedMint,MINT);
- initOptions.onSwapError();assert.equal(env.nodes.get('download-card').hidden,true);
- assert.throws(()=>api.applyLander({id:0,wallet:WALLET,balanceRaw:'1'}));assert.equal(env.nodes.get('download-card').hidden,true);
- const pending=api.verifyAndClaim('A'.repeat(88));await settle();assert.equal(env.nodes.get('download-card').hidden,true);assert.equal(env.nodes.get('lander-card').dataset.certification,'preview');
- resolveClaim();await pending;assert.equal(env.nodes.get('download-card').hidden,false);assert.equal(env.nodes.get('card-id').textContent,'#0042');assert.equal(env.nodes.get('lander-balance').value,'123.456789');assert.equal(env.nodes.get('card-preview-label').hidden,true);
+ initOptions.onSwapError();assert.equal(env.nodes.get('download-card').disabled,true);
+ assert.throws(()=>api.applyLander({id:0,wallet:WALLET,balanceRaw:'1'}));assert.equal(env.nodes.get('download-card').disabled,true);
+ const pending=api.verifyAndClaim('B'.repeat(88));await settle();assert.equal(env.nodes.get('download-card').disabled,true);assert.equal(env.nodes.get('lander-card').dataset.certification,'preview');
+ resolveClaim();await pending;assert.equal(env.nodes.get('download-card').disabled,false);assert.equal(env.nodes.get('card-id').textContent,'#0042');assert.equal(env.nodes.get('lander-balance').value,'123.456789');assert.equal(env.nodes.get('card-slot').textContent,'345,678,901');assert.equal(env.nodes.get('card-issued').textContent,'19 OCT 2026');assert(env.nodes.get('card-signature').textContent.includes('...'));assert.equal(env.nodes.get('card-proof-link').hidden,false);
  assert.equal(env.storage.get('landing:lander-wallet'),WALLET);assert(!env.storage.has('landing:pending-signature'));
  await env.nodes.get('live-card-flip').emit('click');assert.equal(env.nodes.get('registered-card-front').hidden,true);
  await env.nodes.get('download-card').emit('click');assert.equal(canvasCalls,1);assert.equal(env.nodes.get('registered-card-front').hidden,true);
  env.nodes.get('restore-wallet').value=WALLET;mode='not-found';await env.nodes.get('restore-card').emit('click');assert(env.nodes.get('swap-status').textContent.includes('No registered Lander card'));
  mode='confirmed';await env.nodes.get('restore-card').emit('click');assert(env.nodes.get('swap-status').textContent.includes('Existing registry card restored'));
- mode='invalid';await api.verifyAndClaim('B'.repeat(88));assert(env.nodes.get('swap-status').textContent.includes('not a finalized'));assert(!env.storage.has('landing:pending-signature'));
+ mode='invalid';await api.verifyAndClaim('C'.repeat(88));assert(env.nodes.get('swap-status').textContent.includes('not a finalized'));assert(!env.storage.has('landing:pending-signature'));
  assert.equal(api.rawLandingToDecimal('bad'),'');assert.equal(api.formatLanderId(-1),'');
- console.log('PASS: fixed LANDING Jupiter output; unissued download guard; waiting/invalid/incomplete claims; registry-only ID and balance; pending-state recovery keys; read-only restore; certified PNG target and reverse restoration. Registry responses are isolated fixtures.');
+ console.log('PASS: fixed LANDING Jupiter output; download stays disabled without registry-confirmed finalized proof; waiting/invalid/incomplete claims; registry-only ID/balance/slot/signature/date; pending-state recovery keys; read-only restore; certified PNG target and reverse restoration. Registry responses are isolated fixtures.');
 }
 async function walletDialogTests(){
  const env=environment('wall.html',async url=>{assert(url.startsWith(API+'/api/wall/marks'));return Response.json({status:'ok',marks:[],nextBefore:null,hasMore:false});});
