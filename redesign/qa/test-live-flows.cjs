@@ -111,7 +111,7 @@ async function landerTests(){
  await env.nodes.get('live-card-flip').emit('click');assert.equal(env.nodes.get('registered-card-front').hidden,true);
  await env.nodes.get('download-card').emit('click');assert.equal(canvasCalls,1);assert.equal(env.nodes.get('registered-card-front').hidden,true);
  env.nodes.get('restore-wallet').value=WALLET;mode='not-found';await env.nodes.get('restore-card').emit('click');assert(env.nodes.get('swap-status').textContent.includes('No registered Lander card'));
- mode='confirmed';await env.nodes.get('restore-card').emit('click');assert(env.nodes.get('swap-status').textContent.includes('Existing registry card restored'));
+ mode='confirmed';await env.nodes.get('restore-card').emit('click');assert(env.nodes.get('swap-status').textContent.includes('Existing registry-confirmed card restored'));
  mode='invalid';await api.verifyAndClaim('C'.repeat(88));assert(env.nodes.get('swap-status').textContent.includes('not a finalized'));assert(!env.storage.has('landing:pending-signature'));
  assert.equal(api.rawLandingToDecimal('bad'),'');assert.equal(api.formatLanderId(-1),'');
  console.log('PASS: fixed LANDING Jupiter output; download stays disabled without registry-confirmed finalized proof; waiting/invalid/incomplete claims; registry-only ID/balance/slot/signature/date; pending-state recovery keys; read-only restore; certified PNG target and reverse restoration. Registry responses are isolated fixtures.');
