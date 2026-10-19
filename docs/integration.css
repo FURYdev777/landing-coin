@@ -29,7 +29,7 @@
 .registered-card{
   position:relative;
   min-height:0;
-  aspect-ratio:1.586/1;
+  aspect-ratio:auto;
   padding:28px;
   border:1px solid #c7c4bb;
   border-radius:10px;
