@@ -39,12 +39,13 @@ jobs:
           node-version: '22'
       - name: Install isolated browser QA dependencies
         run: |
-          npm install --prefix "$RUNNER_TEMP/landing-qa" --no-save playwright@1.55.1 @solana/web3.js@1.98.4
+          npm install --prefix "$RUNNER_TEMP/landing-qa" --no-save playwright@1.55.1 @solana/web3.js@1.98.4 html2canvas@1.4.1
           node "$RUNNER_TEMP/landing-qa/node_modules/playwright/cli.js" install --with-deps chromium
       - name: Render every page at six widths without live transactions
         run: |
           export PLAYWRIGHT_MODULE="$RUNNER_TEMP/landing-qa/node_modules/playwright"
           export WEB3_IIFE="$RUNNER_TEMP/landing-qa/node_modules/@solana/web3.js/lib/index.iife.min.js"
+          export HTML2CANVAS_FILE="$RUNNER_TEMP/landing-qa/node_modules/html2canvas/dist/html2canvas.min.js"
           node redesign/qa/browser-qa.cjs
       - uses: actions/upload-artifact@v4
         if: always()

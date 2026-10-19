@@ -95,7 +95,7 @@
 
     if (!Number.isInteger(id) || id < 1) return '';
 
-    return '#' + String(id).padStart(4, '0');
+    return String(id).padStart(4, '0');
   }
 
   function formatIssuedDate(value) {
@@ -174,7 +174,7 @@
     const id = idInput.value.trim();
 
     cardId.textContent =
-      id ? (id.startsWith('#') ? id : '#' + id) : '#----';
+      id ? id.replace(/^#+/, '') : '----';
 
     cardBackId.textContent = cardId.textContent;
   }
@@ -450,7 +450,7 @@
 
       link.download =
         'certified-lander-' +
-        confirmedLander.id.replace('#', '') +
+        confirmedLander.id +
         '-' +
         (holder || 'card') +
         '.png';
