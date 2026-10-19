@@ -1,25 +1,49 @@
 # LANDING: faithful Sites migration
 
-The website in `docs/` is a byte-for-byte copy of the 57 public source files from Sites version 13, commit `6b5b89b619023e6d5b477667f3d45574a928f1be`. This replaces the earlier approximation on `sites-redesign` with the actual approved design: original SVG scenes, self-hosted fonts, all 24 HTML pages, grouped navigation, layout, scroll animation, pause/reduced-motion behavior and interactions.
+The website in `docs/` is the production-prepared GitHub Pages port of the approved LANDING Sites version 13, source commit `6b5b89b619023e6d5b477667f3d45574a928f1be`.
 
-`source-manifest.json` records SHA-256 hashes for every original file. Eleven additional redirect documents retain older GitHub URLs and the aliases served by the Sites Worker. The frontend uses the existing registry backend directly, so GitHub Pages requires no Sites Worker. The original Cloudflare backend, database configuration, mint, recipient, token amount and Jupiter integration remain untouched. Wall transaction functions are checked against the existing branch source. Lander verification still depends on registry-confirmed records; no ID is invented locally. Transparency keeps the existing backend classification and labels partial/missing data.
+The migration preserves the original visual/runtime implementation: SVG scenes, self-hosted fonts, grouped navigation, layouts, scroll animation, pause/reduced-motion behavior and interactions. The source provenance hashes remain in `redesign/source-manifest.json`.
 
-This branch is a review candidate. No merge, Pages deployment, DNS change, Sites deployment or backend write is included. The source's `noindex` and review labels are retained. Existing `docs/CNAME`, `.nojekyll`, videos, whitepaper and unrelated repository files are retained.
+## Intentional production deltas
+
+The approved Sites build was a private review build. Before production, the branch intentionally changes only release-state material:
+
+- canonical public pages are indexable;
+- `robots.txt` allows crawling and references the production sitemap;
+- private-review labels and the private review utility page are removed;
+- legal pages are labeled as current policies rather than owner-review drafts;
+- the production sitemap includes the canonical public legal pages;
+- compatibility redirects remain `noindex,nofollow`;
+- the 404 page remains `noindex`.
+
+Non-release visual/runtime source files from Sites v13 remain byte-identical where required by QA.
+
+## Existing integrations preserved
+
+The frontend continues to use the existing registry backend directly, so GitHub Pages does not require a Sites Worker.
+
+Wall transaction functions preserve the existing 5,000 LANDING payment, memo and verification flow. Certified Lander preserves Jupiter, registry-confirmed IDs, recovery and card download. Transparency preserves the existing backend classification and unavailable/partial-data handling.
+
+The Cloudflare backend, D1/database configuration, mint, recipient, token amount, Jupiter integration, `docs/CNAME`, videos and unrelated repository files are not changed by the production-preparation pass.
 
 ## Validation
 
-The `LANDING redesign QA` workflow performs source-hash checks, local links/anchors, metadata, content, JavaScript syntax, isolated wallet/registry contract tests and startup simulations. A separate job renders every original page at 1440, 1024, 768, 430, 390 and 360 pixels, with screenshots and a machine-readable report in the `landing-redesign-browser-qa` Actions artifact. It serves files only on the runner's localhost; it never publishes them. Browser API responses are explicitly isolated fixtures. Failed checks must be resolved or reported before a production cutover.
+The `LANDING redesign QA` workflow checks:
 
-Local checks:
+- Sites v13 source provenance outside the intentional production deltas;
+- production indexing/crawl state;
+- local routes, assets and anchors;
+- metadata, Open Graph, canonicals and structured data;
+- JavaScript syntax;
+- Wall/Lander integration contracts using isolated fixtures;
+- all-page startup;
+- responsive rendering at 1440, 1024, 768, 430, 390 and 360 px;
+- horizontal overflow, runtime errors, broken images, menus, FAQ and motion controls.
 
-```sh
-python3 redesign/qa/verify-migration.py
-python3 redesign/qa/verify-content.py
-python3 redesign/qa/audit-final.py
-node redesign/qa/preproduction-dom-smoke.cjs
-node redesign/qa/test-live-flows.cjs /absolute/path/to/solana-web3-1.98.4/lib/index.iife.min.js
-```
+The browser tests run only on localhost with isolated read-only fixtures. They do not publish, sign transactions or write to production services.
 
 ## Verification limits
 
-The hosted source was inspected in the browser on desktop. The complete rendered branch still requires the browser workflow to pass. Isolated tests do not certify an actual wallet signature, a mainnet payment, an eligible live Jupiter swap, a new registry claim or a downloaded card produced by a real transaction. Those actions were not performed. Backend and CORS availability at the eventual production origin must remain part of release qualification. Source legal review labels are preserved.
+Automated QA does not certify an actual wallet signature, a mainnet Wall payment, an eligible live Jupiter swap, a new Certified Lander registry claim or a card exported from a real transaction. Those actions require final live verification after deployment on the production origin.
+
+The branch remains separate from `main` until explicit merge approval.
