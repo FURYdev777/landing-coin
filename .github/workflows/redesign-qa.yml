@@ -1,0 +1,102 @@
+name: LANDING redesign QA
+
+on:
+  push:
+    branches: [sites-redesign]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  static-qa:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: JavaScript syntax
+        run: |
+          node --check docs/app.js
+          node --check docs/descent.js
+
+      - name: HTML parse and local-link audit
+        run: |
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          from urllib.parse import urlparse, unquote
+
+          root = Path("docs")
+          html_files = sorted(root.rglob("*.html"))
+          errors = []
+
+          class Checker(HTMLParser):
+              def __init__(self, path):
+                  super().__init__(convert_charrefs=True)
+                  self.path = path
+              def handle_starttag(self, tag, attrs):
+                  attrs = dict(attrs)
+                  for key in ("href", "src"):
+                      value = attrs.get(key)
+                      if not value or not value.startswith("/") or value.startswith("//"):
+                          continue
+                      parsed = urlparse(value)
+                      path = unquote(parsed.path)
+                      if path == "/":
+                          target = root / "index.html"
+                      else:
+                          rel = path.lstrip("/")
+                          target = root / rel
+                          if path.endswith("/"):
+                              target = target / "index.html"
+                          elif not target.suffix:
+                              candidate = target / "index.html"
+                              if candidate.exists():
+                                  target = candidate
+                      if not target.exists():
+                          errors.append(f"{self.path}: broken local {key} {value} -> {target}")
+
+          for path in html_files:
+              try:
+                  text = path.read_text(encoding="utf-8")
+                  parser = Checker(path)
+                  parser.feed(text)
+                  parser.close()
+              except Exception as exc:
+                  errors.append(f"{path}: parse error: {exc}")
+
+          if errors:
+              print("\n".join(errors))
+              raise SystemExit(1)
+
+          print(f"PASS: parsed {len(html_files)} HTML files; local root links resolve.")
+          PY
+
+      - name: Critical integrations still present
+        run: |
+          grep -q "/api/wall/marks" docs/wall.html
+          grep -q "/api/wall/wallet" docs/wall.html
+          grep -q "/api/wall/blockhash" docs/wall.html
+          grep -q "/api/wall/status" docs/wall.html
+          grep -q "/api/claim" docs/lander/index.html
+          grep -q "/api/lander" docs/lander/index.html
+          grep -q "/api/transparency" docs/transparency.html
+          grep -q "5000000000n" docs/wall.html
+          grep -q "LANDING-WALL:v1:" docs/wall.html
+          grep -q "landingcoin.fun" docs/CNAME
+
+      - name: Required redesign routes
+        run: |
+          test -f docs/about/index.html
+          test -f docs/buy/index.html
+          test -f docs/markets/index.html
+          test -f docs/tokenomics/index.html
+          test -f docs/routes/jupiter.html
+          test -f docs/routes/poloniex.html
+          test -f docs/community/index.html
+          test -f docs/faq/index.html
+          test -f docs/privacy/index.html
+          test -f docs/cookie/index.html
+          test -f docs/terms/index.html
