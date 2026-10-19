@@ -98,3 +98,10 @@
 #lander-card .registered-back-proof{gap:2cqw;margin-top:auto;padding-top:2cqw}
 #lander-card .registered-back-proof span{font-size:1.1cqw}
 #lander-card .registered-back-proof strong{font-size:4.6cqw}
+#lander-card .registered-front{padding-bottom:8cqw}
+#lander-card .registered-card-main{margin-top:2cqw}
+#lander-card .registered-front h3{font-size:6.8cqw}
+#lander-card .registered-holder{margin-top:2cqw}
+#lander-card .registered-holder strong{font-size:2.3cqw}
+#lander-card .registered-details{margin-top:2cqw;padding-top:1.6cqw}
+#lander-card .registered-card-footer{position:absolute;left:0;right:0;bottom:0;margin:0!important}
