@@ -70,7 +70,7 @@ for a,b in zip(phases,migrated):
  assert [norm(x)for x in a.xpath('./ul/li')]==[norm(x)for x in b.xpath('.//ul/li')]
  assert norm(a.xpath('.//span[contains(@class,"status")]')[0]).upper()==norm(b.xpath('.//span[contains(@class,"status-pill")]')[0])
 
-team=(P/'team.html').read_text();assert all(x in team for x in ['Michele Scalini','Founder &amp; Project Operator','Furqan','Growth &amp; Community Manager'])
+team=(P/'team.html').read_text();assert all(x in team for x in ['Michele Scalini','Founder &amp; Project Operator','Nova','digital executive assistant','signing authority'])
 faq=html.fromstring((P/'faq.html').read_text());schema=next(x for x in assert_schema(faq,'/faq.html')if 'FAQPage'in(x.get('@type')if isinstance(x.get('@type'),list)else[x.get('@type')]));assert len(schema['mainEntity'])==17
 for item in schema['mainEntity']:assert item['name']in faq.text_content()and item['acceptedAnswer']['text']in faq.text_content()
 
@@ -89,3 +89,5 @@ assert 'Allow: /' in (P/'robots.txt').read_text() and 'Disallow: /' not in (P/'r
 assert not (P/'review.html').exists()
 print('PASS: all 19 pages plus three articles are production-indexable; routes/navigation; metadata/Open Graph/canonicals/schemas; labels/alt/button names; exact news bodies/dates; five factual phases; source ZIP/RSS; reduced-motion safeguards; private review utility removed.')
 print('RELEASE NOTES: production metadata and crawl policy prepared; no merge or deployment performed.')
+
+assert 'furqan' not in team.lower(), 'Team must not list Furqan'
