@@ -27,6 +27,7 @@ const results = [];
   const browser = await chromium.launch();
   try {
     for (const width of [1440, 1024, 768, 430, 390, 360]) {
+      let fixtureId = 42;
       const context = await browser.newContext({viewport:{width, height:900}, reducedMotion:'reduce'});
       // Deterministic read-only fixtures. All other external requests are refused.
       await context.route('**/*', async route => {
@@ -36,6 +37,8 @@ const results = [];
         if (url.pathname === '/api/wall/marks') return route.fulfill({json:{status:'ok',marks:[],hasMore:false,nextBefore:null}});
         if (url.pathname === '/api/transparency') return route.fulfill({json:{updatedAt:'2026-10-19T12:00:00Z',holders:{totalPositiveOwners:9,independentHolders:4,projectWallets:4,liquidityPools:1,founderControlled:0,exchangeWallets:0,complete:false},liquidity:{},market:null}});
         if (url.pathname.endsWith('/index.iife.min.js')) return route.fulfill({contentType:'application/javascript',body:fs.readFileSync(process.env.WEB3_IIFE)});
+        if (url.pathname.includes('html2canvas') && process.env.HTML2CANVAS_FILE) return route.fulfill({contentType:'application/javascript',body:fs.readFileSync(process.env.HTML2CANVAS_FILE)});
+        if (url.pathname === '/api/lander') return route.fulfill({json:{status:'confirmed',lander:{id:fixtureId,wallet:'CBPwvUZrDQThyM6a54shKPpywvpTyYQQ2Ng7FWPZPM88',balanceRaw:'123456789',signature:'A'.repeat(88),confirmedSlot:345678901,createdAt:'2026-10-19 12:00:00'}}});
         return route.abort();
       });
       const page = await context.newPage();
@@ -92,6 +95,40 @@ const results = [];
       assert.equal(await page.locator('#download-card').isVisible(), true);
       assert.equal(await page.locator('#download-card').isDisabled(), true);
       assert.equal(await page.locator('#lander-card').getAttribute('data-certification'), 'preview');
+      assert.equal((await page.locator('.registered-brand').innerText()).trim(), 'LANDING COIN');
+      assert.equal(await page.locator('#registered-card-front .registered-astronaut').count(), 0);
+      assert.equal(await page.locator('#card-id').innerText(), '----');
+      await page.locator('#lander-name').fill('EXAMPLE LANDER');
+      await page.locator('#restore-wallet').fill('CBPwvUZrDQThyM6a54shKPpywvpTyYQQ2Ng7FWPZPM88');
+      await page.locator('#restore-card').click();
+      await page.locator('#lander-card[data-certification="confirmed"]').waitFor();
+      assert.equal(await page.locator('#download-card').isDisabled(), false);
+      assert.equal(await page.locator('#card-id').innerText(), '0042');
+      assert.equal(await page.locator('#lander-id').inputValue(), '0042');
+      async function checkCardLayout() {
+        const geometry = await page.evaluate(() => {
+          const front = document.getElementById('registered-card-front').getBoundingClientRect();
+          const selectors = ['.registered-brand', '.registered-verify', 'h3', '.registered-id-block', '.registered-holder', '.registered-details', '.registered-proof', '.registered-card-footer'];
+          const boxes = selectors.map(selector => {
+            const el = document.querySelector('#registered-card-front ' + selector), r = el.getBoundingClientRect();
+            return {selector,left:r.left,right:r.right,top:r.top,bottom:r.bottom,overflow:el.scrollWidth>el.clientWidth+1};
+          });
+          const intersects = (a,b) => a.left < b.right-1 && a.right > b.left+1 && a.top < b.bottom-1 && a.bottom > b.top+1;
+          return {outside:boxes.filter(r=>r.left<front.left-1 || r.right>front.right+1 || r.top<front.top-1 || r.bottom>front.bottom+1 || r.overflow),overlap:intersects(boxes[0],boxes[1]) || intersects(boxes[2],boxes[3]) || intersects(boxes[3],boxes[4])};
+        });
+        assert.deepEqual(geometry.outside, [], `${width}: card clipping`);
+        assert.equal(geometry.overlap, false, `${width}: card overlap`);
+      }
+      await checkCardLayout();
+      await page.locator('#registered-card-front').screenshot({path:path.join(output, `${width}-certified-lander-card.png`)});
+      const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#download-card').click()]);
+      assert.equal(download.suggestedFilename(), 'certified-lander-0042-example-lander.png');
+      await download.saveAs(path.join(output, `${width}-certified-lander-export.png`));
+      fixtureId = 12345678;
+      await page.locator('#lander-name').fill('A'.repeat(40));
+      await page.locator('#restore-card').click();
+      await page.waitForFunction(() => document.getElementById('card-id').textContent === '12345678');
+      await checkCardLayout();
       for (const [alias, target] of Object.entries(manifest.redirects)) {
         await page.goto(origin + '/' + alias + '?ref=1#check');
         await page.waitForURL(origin + target + '?ref=1#check');
