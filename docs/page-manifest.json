@@ -75,11 +75,6 @@
     "description": "How LANDING handles public wallet data, Wall messages, Certified Lander records, functional browser storage, retention and privacy requests."
   },
   {
-    "path": "/review.html",
-    "title": "Private Site Review Notes | LANDING",
-    "description": "Private LANDING review inventory, connected systems and remaining release checks. This utility page is not a canonical public project destination."
-  },
-  {
     "path": "/routes/jupiter.html",
     "title": "Buy LANDING on Jupiter | Solana Wallet Route",
     "description": "How to buy LANDING through Jupiter: use a compatible Solana wallet, keep SOL for network fees, verify the official mint and review the swap before signing."
