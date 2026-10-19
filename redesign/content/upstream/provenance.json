@@ -1,0 +1,38 @@
+{
+  "lander": {
+    "sha": "b28fc3729793af8efe2fbbbb8043d415d91c3e60",
+    "url": "https://github.com/michelescalini-sketch/landing-coin/blob/main/docs/lander/index.html"
+  },
+  "registry": {
+    "sha": "506aed657691ffeee926673575327078bb5ee641",
+    "url": "https://github.com/michelescalini-sketch/landing-coin/blob/main/cloudflare/lander-registry/src/index.ts"
+  },
+  "flight": {
+    "sha": "889bab564a0119561be80634c26d990c60dcf02f",
+    "url": "https://github.com/michelescalini-sketch/landing-coin/blob/main/docs/flight-plan.html"
+  },
+  "discordArticle": {
+    "sha": "63c66c04d6fb26d0757924df2083852e69b6ffc2",
+    "url": "https://github.com/michelescalini-sketch/landing-coin/blob/main/docs/news/landing-coin-discord-community.html"
+  },
+  "wallArticle": {
+    "sha": "b8f235724337808fa294e8c1f938a4a7ccbcbe49",
+    "url": "https://github.com/michelescalini-sketch/landing-coin/blob/main/docs/news/landing-wall-and-future-merch-store.html"
+  },
+  "poloArticle": {
+    "sha": "3ad9bd447ad12fffb924c7f02a754ac362c3a0bf",
+    "url": "https://github.com/michelescalini-sketch/landing-coin/blob/main/docs/news/landing-coin-poloniex-listing.html"
+  },
+  "news": {
+    "sha": "42b3996a5ff58dd0e073978e41e731fa18f29976",
+    "url": "https://github.com/michelescalini-sketch/landing-coin/blob/main/docs/news/index.html"
+  },
+  "feed": {
+    "sha": "ee46b6e412596c4a69709cc88741883c8b411474",
+    "url": "https://github.com/michelescalini-sketch/landing-coin/blob/main/docs/news/feed.xml"
+  },
+  "wall": {
+    "sha": "c2a8b48405693c76c5b0c6eca8680b4d7d34dcce",
+    "url": "https://github.com/michelescalini-sketch/landing-coin/blob/main/docs/wall.html"
+  }
+}

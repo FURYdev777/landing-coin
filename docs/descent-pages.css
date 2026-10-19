@@ -1,0 +1,279 @@
+/* Shared LANDING descent system for secondary pages.
+   Loaded after the existing page styles so functionality-specific layout survives
+   while the presentation matches the new homepage. */
+
+.inner-page{
+  background:
+    radial-gradient(circle at 85% 3%,rgba(255,196,79,.06),transparent 24rem),
+    linear-gradient(180deg,#0b0d12 0%,#090b0f 100%);
+}
+.inner-page::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  opacity:.22;
+  background-image:
+    linear-gradient(rgba(255,255,255,.024) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.024) 1px,transparent 1px);
+  background-size:64px 64px;
+}
+.inner-page .header{
+  max-width:none;
+  width:100%;
+  height:78px;
+  padding:0 max(28px,calc((100vw - 1240px)/2));
+  margin:0;
+  position:sticky;
+  top:0;
+  z-index:40;
+  background:rgba(11,13,18,.88);
+  backdrop-filter:blur(18px);
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.inner-page .header .brand{font-size:1.15rem}
+.inner-page .header nav{gap:8px}
+.inner-page .header nav a{
+  padding:10px 12px;
+  border:1px solid transparent;
+  border-radius:4px;
+  font-size:.78rem;
+  letter-spacing:.04em;
+}
+.inner-page .header nav a:hover,
+.inner-page .header nav a[aria-current="page"]{
+  color:#f4f3ec;
+  border-color:#383d47;
+  background:#151920;
+}
+.inner-page .header-buy{min-height:40px;border-radius:4px;padding:10px 16px}
+
+.inner-page .section-nav{
+  max-width:1240px;
+  width:calc(100% - 80px);
+  margin:0 auto;
+  padding:15px 0;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  gap:7px 20px;
+  font-size:.72rem;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
+.inner-page .section-nav a{color:#848a94}
+.inner-page .section-nav a:hover,
+.inner-page .section-nav a[aria-current="page"]{color:#ffc44f}
+.inner-page .breadcrumb{
+  max-width:1240px;
+  width:calc(100% - 80px);
+  margin:0 auto;
+  padding:18px 0 0;
+  font-size:.68rem;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:#6f7580;
+}
+.inner-page .breadcrumb a{color:#9298a2}
+.inner-page .page-content{
+  max-width:1240px;
+  width:calc(100% - 80px);
+  margin:0 auto;
+}
+.inner-page .page-content>.hero,
+.inner-page .page-content>div>.hero,
+.inner-page .page-content>header{
+  position:relative;
+  padding:74px 0 54px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  overflow:hidden;
+}
+.inner-page .page-content>.hero::after,
+.inner-page .page-content>div>.hero::after,
+.inner-page .page-content>header::after{
+  content:"ALT / 0";
+  position:absolute;
+  right:0;
+  top:70px;
+  font:600 .62rem/1 'Space Grotesk',sans-serif;
+  letter-spacing:.16em;
+  color:#575d67;
+}
+.inner-page .page-content .eyebrow,
+.inner-page .page-content .kicker{
+  color:#9ea3ad;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+}
+.inner-page .page-content h1{
+  max-width:950px;
+  margin-top:18px;
+  font-size:clamp(3rem,6.5vw,6.2rem);
+  line-height:.97;
+  letter-spacing:-.067em;
+}
+.inner-page .page-content h1 .gradient,
+.inner-page .page-content .gradient{
+  color:#ffc44f;
+  background:none;
+  -webkit-text-fill-color:initial;
+}
+.inner-page .page-content .lead,
+.inner-page .page-content .hero-copy,
+.inner-page .page-content .intro,
+.inner-page .page-content .dek{
+  max-width:790px;
+  margin-top:22px;
+  font-size:1rem;
+  line-height:1.75;
+}
+.inner-page .page-content section{padding:52px 0}
+.inner-page .page-content .section-head{
+  margin-bottom:28px;
+  padding-top:4px;
+}
+.inner-page .page-content .section-head h2,
+.inner-page .page-content .section-title{
+  font-size:clamp(2rem,4vw,3.25rem);
+  letter-spacing:-.055em;
+}
+.inner-page .page-content .section-head p{max-width:520px}
+.inner-page .page-content :is(.card,.panel,.metric,.profile-card,.future-node,.code-item,.generator-form,.rss-box,.principle,.definition,.cta,.source,.hero-card,.callout,.phase,.composer-wrap){
+  border-radius:2px;
+  background:rgba(17,20,26,.88);
+  border-color:#333842;
+  box-shadow:none;
+}
+.inner-page .page-content :is(.card,.panel,.metric,.profile-card,.future-node,.code-item,.generator-form,.rss-box,.source,.hero-card,.phase){
+  transition:border-color .18s,background .18s,transform .18s;
+}
+.inner-page .page-content :is(.card,.metric,.source):hover{
+  border-color:#555c68;
+  background:#151920;
+}
+.inner-page .page-content .button,
+.inner-page .page-content .rss-button,
+.inner-page .page-content a.cta{
+  border-radius:4px;
+  min-height:48px;
+}
+.inner-page .page-content .button.primary,
+.inner-page .page-content .download-card,
+.inner-page .page-content a.cta{
+  background:#ffc44f;
+  color:#11131a;
+  border-color:#ffc44f;
+}
+.inner-page .page-content .pill,
+.inner-page .page-content .status,
+.inner-page .page-content .reference{
+  border-radius:2px;
+}
+.inner-page .page-content .manifesto,
+.inner-page .page-content .allocation-note,
+.inner-page .page-content .risk,
+.inner-page .page-content .future{
+  border-radius:2px;
+}
+.inner-page .page-content .manifesto,
+.inner-page .page-content .callout,
+.inner-page .page-content .principle{
+  border-left:2px solid #ffc44f;
+}
+.inner-page .page-content code{color:#e8e7e1}
+.inner-page .page-content .inline-copy{
+  border-radius:2px;
+  background:#20242d;
+}
+.inner-page .page-content .row{
+  border-color:#30353e;
+}
+.inner-page .page-content .metric strong,
+.inner-page .page-content .fact strong{
+  font-family:'Space Grotesk',sans-serif;
+}
+.inner-page .page-content .good{color:#ffc44f}
+.inner-page .page-content .source-grid,
+.inner-page .page-content .grid,
+.inner-page .page-content .market-grid{
+  gap:12px;
+}
+
+/* Wall */
+.page-wall .page-content .composer-wrap{border:1px solid #343a44}
+.page-wall .page-content .compose-card{
+  border-radius:0;
+  background:#f5d477;
+  transform:rotate(-.8deg);
+}
+.page-wall .page-content .sticky{border-radius:0}
+.page-wall .page-content .wallet-dialog{border-radius:3px}
+.page-wall .page-content .connect-button,
+.page-wall .page-content .leave-button,
+.page-wall .page-content .get-action{border-radius:2px}
+
+/* Certified Lander */
+.page-lander .page-content .certified-card{
+  border-radius:4px;
+  background:
+    linear-gradient(145deg,rgba(255,196,79,.04),transparent 48%),
+    #11151d;
+  border-color:#555c68;
+}
+.page-lander .page-content .certified-card .gradient{color:#ffc44f}
+.page-lander .page-content .generator-form{border-radius:2px}
+.page-lander .page-content .video-wrap{border-radius:2px}
+
+/* Flight plan */
+.page-flight .page-content .timeline{border-color:#343a44}
+.page-flight .page-content .phase{border-radius:2px}
+.page-flight .page-content .phase .status.completed{color:#ffc44f}
+.page-flight .page-content .phase:before{border-color:#ffc44f}
+
+/* Transparency */
+.page-transparency .page-content .metric{min-height:150px}
+.page-transparency .page-content .bar{border-radius:0}
+.page-transparency .page-content .source{border-radius:2px}
+
+/* News */
+.page-news .page-content .card,
+.page-news-article .page-content .article-body .cta{border-radius:2px}
+.page-news .page-content .card h2{letter-spacing:-.04em}
+
+/* Team */
+.page-team .page-content .profile-image,
+.page-team .page-content .future-role,
+.page-team .page-content .transparency-note{border-radius:2px}
+
+.inner-page .footer{
+  max-width:1240px;
+  width:calc(100% - 80px);
+  border-top:1px solid rgba(255,255,255,.08);
+  margin-top:30px;
+}
+.inner-page .footer-top{grid-template-columns:1.8fr repeat(3,1fr)}
+
+@media(max-width:900px){
+  .inner-page .header{padding-inline:24px}
+  .inner-page .section-nav,
+  .inner-page .breadcrumb,
+  .inner-page .page-content,
+  .inner-page .footer{width:calc(100% - 48px)}
+}
+@media(max-width:700px){
+  .inner-page .header{height:72px}
+  .inner-page .header nav{top:72px;left:14px;right:14px;border-radius:3px}
+  .inner-page .section-nav,
+  .inner-page .breadcrumb,
+  .inner-page .page-content,
+  .inner-page .footer{width:calc(100% - 36px)}
+  .inner-page .page-content>.hero,
+  .inner-page .page-content>div>.hero,
+  .inner-page .page-content>header{padding-top:52px}
+  .inner-page .page-content>.hero::after,
+  .inner-page .page-content>div>.hero::after,
+  .inner-page .page-content>header::after{display:none}
+  .inner-page .footer-top{grid-template-columns:1fr 1fr}
+}
+@media(prefers-reduced-motion:reduce){
+  .inner-page *{animation:none!important;transition:none!important}
+}

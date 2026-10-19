@@ -1,0 +1,10 @@
+/* Existing LANDING components, scoped to the four review pages. */
+.page-section-index{display:flex;flex-wrap:wrap;gap:8px 24px;padding:24px 0;border-bottom:1px solid var(--line);font-size:10px;line-height:1.6}
+.page-section-index a{display:flex;align-items:center;min-height:44px;color:var(--muted)}
+.page-section-index a:hover,.page-section-index a:focus-visible{color:var(--yellow)}
+.page-section[id]{scroll-margin-top:110px}
+.page-source-reference{padding-bottom:50px}
+.route-service-note{margin-top:28px}
+.asset-title{font-size:20px;letter-spacing:-.03em;margin:18px 0 12px}
+.checklist-title{font:inherit;letter-spacing:inherit;margin:0}
+@media(max-width:760px){.page-section-index{gap:0 20px;font-size:9px}.page-section[id]{scroll-margin-top:90px}.route-service-note{margin-top:18px}}
