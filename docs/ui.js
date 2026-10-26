@@ -550,6 +550,43 @@
     });
   }
 
+  /* ---- Lander download lock --------------------------------------------
+     Download starts locked. The project's newer lander-live.js unlocks it
+     itself once the registry confirms a card. The older version only
+     un-hides it, so for that one the button is unlocked here when the card
+     is marked confirmed. Both scripts refuse a download without a
+     confirmed card, so this never unlocks anything early. */
+
+  function bindLanderUnlock() {
+    var card = document.getElementById('lander-card');
+    var button = document.getElementById('download-card');
+    if (!card || !button || !('MutationObserver' in window)) return;
+
+    // The older script also leaves the proof fields at their placeholders,
+    // which would read "Finalized swap required" on a confirmed card. Any
+    // field still at its placeholder once the card is confirmed is hidden.
+    // The newer script fills them before this runs, so they stay.
+    var placeholders = [
+      ['card-slot', '\u2014'], ['card-issued', '\u2014'],
+      ['card-signature', 'TX \u2014'], ['card-back-proof', 'On-chain proof required']
+    ];
+
+    new MutationObserver(function () {
+      if (card.getAttribute('data-certification') !== 'confirmed') return;
+      if (button.disabled) {
+        button.disabled = false;
+        button.setAttribute('aria-disabled', 'false');
+      }
+      placeholders.forEach(function (pair) {
+        var field = document.getElementById(pair[0]);
+        if (!field || field.textContent.trim() !== pair[1]) return;
+        var holder = pair[0] === 'card-signature' ? field.parentNode
+          : pair[0] === 'card-back-proof' ? field : field.parentNode;
+        holder.hidden = true;
+      });
+    }).observe(card, { attributes: true, attributeFilter: ['data-certification'] });
+  }
+
   /* ---- Start ------------------------------------------------------------ */
 
   function init() {
@@ -562,6 +599,7 @@
     bindDrawer();
     bindReadings();
     bindMirrors();
+    bindLanderUnlock();
     bindOffscreenPause();
   }
 

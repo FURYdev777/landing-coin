@@ -76,16 +76,30 @@ PRIVACY = {
                    'wallet address.'),
 
                  h3('Local storage'),
-                 p('Your motion preference is kept in your own browser so the '
-                   'site does not reset it on every page. It never leaves '
-                   'your device and is not an identifier. Clearing site data '
-                   'removes it.'),
+                 p('Only the Certified Lander page stores anything in your '
+                   'browser, and only two entries: your public wallet '
+                   'address once a card is confirmed or restored '
+                   '(<strong>landing:lander-wallet</strong>), so the page can '
+                   'show the same card on your next visit, and the '
+                   'transaction signature of a swap while the registry checks '
+                   'it (<strong>landing:pending-signature</strong>). Neither '
+                   'is a cookie. The '
+                   '<a href="/cookie-policy.html">cookie and local storage '
+                   'policy</a> explains both in full.'),
 
                  h3('Third parties'),
                  p('Some pages link to block explorers, exchanges and social '
                    'platforms. Once you follow a link you are on their site '
                    'under their policy, and we have no control over or '
                    'visibility into what they collect.'),
+                 p('The Wall and Certified Lander pages load code from '
+                   'Jupiter and from public code libraries (jsDelivr and '
+                   'esm.sh), and the Transparency, Wall and Lander pages read '
+                   'from the project\'s own registry service. Those services '
+                   'see each request, as any web server does. The Jupiter '
+                   'swap window and your wallet app are run by their '
+                   'providers and may keep their own data under their own '
+                   'policies.'),
 
                  h3('Removal'),
                  p('To have a mark or a Certified Lander record removed, '
@@ -116,49 +130,65 @@ PRIVACY = {
 COOKIES = {
     'route': '/cookie-policy.html',
     'title': 'Cookie &amp; Local Storage Policy | LANDING',
-    'description': 'LANDING sets no tracking cookies. The only thing stored '
-                   'in your browser is your motion preference.',
+    'description': 'LANDING sets no cookies. The only things stored in '
+                   'your browser are two entries the Certified Lander page '
+                   'uses to find your card again.',
     'priority': '0.3',
     'changefreq': 'yearly',
     'body': ''.join([
         _legal_hero(
-            'One setting. <mark>No trackers</mark>.',
+            'Two entries. <mark>No trackers</mark>.',
             'There is no cookie banner on this site because there is nothing '
-            'to consent to. Here is the full list of what gets stored.',
+            'to consent to. Here is the full list of what gets stored, and '
+            'why.',
             'Cookies'),
 
         band('01', 'The list', 'Everything stored in your browser.',
              body=prose(
-                 h3('Motion preference'),
-                 p('Stored as a single value in local storage under '
-                   '<strong>landing:motion</strong> when you use the motion '
-                   'toggle in the header. It records whether you chose '
-                   'motion on or off, so the site does not forget between '
-                   'pages.'),
-                 p('It contains no identifier, it is never sent to a server, '
-                   'and it cannot be read by any other site. If you have '
-                   'reduced motion enabled at the system level, the site '
-                   'follows that automatically and stores nothing at all '
-                   'until you override it.'),
+                 p('LANDING sets no cookies. Only the Certified Lander page '
+                   'keeps anything, in your browser\'s local storage, and '
+                   'only these two entries.'),
+                 h3('Your Lander wallet'),
+                 p('Stored under <strong>landing:lander-wallet</strong> once '
+                   'the registry confirms or restores your Certified Lander '
+                   'card. It holds your public Solana wallet address, so the '
+                   'next time you open the Lander page it can look up and '
+                   'show the same card.'),
+                 h3('A swap being checked'),
+                 p('Stored under <strong>landing:pending-signature</strong> '
+                   'after you swap through Jupiter on the Lander page, while '
+                   'the registry checks that the swap was finalized on '
+                   'Solana. It holds the transaction signature. It is deleted '
+                   'as soon as the registry confirms or rejects the swap. If '
+                   'the check runs out of time, it stays so the page can try '
+                   'again on your next visit.'),
+                 p('Both are public on-chain values rather than personal '
+                   'identifiers. They are only ever sent to the project\'s '
+                   'own registry, to look up or confirm your card, and no '
+                   'other site can read them.'),
 
                  h3('That is the complete list'),
                  ul([
-                     'No analytics cookies',
-                     'No advertising or remarketing pixels',
-                     'No session identifiers or login cookies, because there '
-                     'are no accounts',
+                     'No cookies of any kind',
+                     'No analytics or advertising trackers',
+                     'No session identifiers or logins, because there are no '
+                     'accounts',
                      'No third-party tag managers',
                  ]),
+                 p('The Jupiter swap window and your wallet app are run by '
+                   'their providers and may keep their own data under their '
+                   'own policies.'),
              )),
 
         band('02', 'Control', 'Removing it.',
              body=prose(
                  p('Clearing site data for landingcoin.fun in your browser '
-                   'removes the stored preference. The site will then follow '
-                   'your operating system\'s reduced-motion setting again.'),
-                 p('Blocking local storage entirely does not break anything. '
-                   'The toggle still works for the current page; the choice '
-                   'just will not be remembered.'),
+                   'removes both entries. Nothing is lost: the Lander page '
+                   'simply will not remember your card, and you can restore '
+                   'it any time with your wallet address.'),
+                 p('Blocking local storage does not break the rest of the '
+                   'site. The Lander page still works; it just cannot '
+                   'remember your card between visits.'),
              )),
 
         cta('Read the rest.',

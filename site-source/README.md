@@ -338,14 +338,23 @@ than the ids, and all of it is kept:
 - **Every id** they look for exists on the page.
 - **Element types.** `#lander-balance`, `#lander-wallet` and `#lander-id`
   are inputs, because the script reads and writes them with `.value`.
-- **Starting states.** `#leave-mark` starts `disabled`, `#download-card`,
-  `#load-more` and `#registered-card-back` start `hidden`,
+- **Starting states.** `#leave-mark` and `#download-card` start
+  `disabled`, `#load-more` and `#registered-card-back` start `hidden`,
   `#live-card-flip` starts `aria-pressed="false"`, and `#lander-card`
   starts `data-certification="preview"`. The scripts flip these; they do
   not set them first.
-- **Starting text.** The card fields start with exactly what
-  `lander-live.js` writes before a card exists, so nothing jumps on load.
-  Every field on the card is one the script fills. The back repeats the
+- **Both versions of `lander-live.js`.** The Lander page works with the
+  version on `sites-redesign` and with the newer one on `main`, which adds
+  the confirmed slot, issue date, proof, signature and Solscan link
+  (`#card-slot`, `#card-issued`, `#card-proof`, `#card-signature`,
+  `#card-back-proof`, `#card-proof-link`). `#card-slot` is that text
+  field, so the element that turns the card in 3D is `#card-turn`. The
+  newer script unlocks Download itself; for the older one `ui.js` unlocks
+  it, and hides any proof field still at its placeholder, once the card is
+  confirmed. Both were tested end to end: restore, confirm, flip,
+  download, reload and a pending swap resuming.
+- **Starting text.** The card fields start with exactly what the newer
+  `lander-live.js` expects before a card exists. The back repeats the
   Lander ID through `data-mirror`, copied by `ui.js`.
 - **Input limits** match: 140 characters for a mark, 40 for a card name,
   44 for a wallet address.
@@ -438,9 +447,10 @@ is deployable as it stands.
 
 - **Liquidity is not locked**, and the copy says so on every page that
   touches the subject. That is deliberate. Do not quietly soften it.
-- No analytics, no tag manager, no advertising pixels. Nothing of ours is
-  stored in a visitor's browser. The project's Lander script keeps the
-  wallet address and any pending swap signature in local storage so a card
-  can be restored.
+- No cookies, analytics, tag manager or advertising pixels. Nothing of
+  ours is stored in a visitor's browser. The project's Lander script keeps
+  two entries in local storage, `landing:lander-wallet` and
+  `landing:pending-signature`, and the Cookie and Privacy pages describe
+  exactly those two.
 - No invented numbers. Where a reading cannot be fetched the interface says
   "unavailable" rather than showing the last value it saw.

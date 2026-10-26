@@ -190,15 +190,20 @@ LANDER = {
 
 <div class="lander-card-area">
 <div class="lander-card" id="lander-card" data-certification="preview">
-<div class="card-slot" id="card-slot">
+<!-- The turning container is #card-turn, not #card-slot: the project's
+     newer lander-live.js writes the confirmed Solana slot number into
+     #card-slot, which would have replaced the whole card. -->
+<div class="card-slot" id="card-turn">
 
-<!-- Every field below is written by lander-live.js. The starting text
-     is what that script puts there before a card exists, so nothing
-     jumps when it runs. Card back ID is copied from #card-id by ui.js. -->
+<!-- Every field below is written by lander-live.js. This markup works with
+     both versions of that script: the one on sites-redesign and the newer
+     one on main, which adds the slot, issue date, proof and signature
+     fields. The starting text is what the newer script expects before a
+     card exists. -->
 <div class="card-face card-front" id="registered-card-front">
 <div class="card-top">
 <span class="card-brand">LANDING</span>
-<span class="card-state" id="card-state">Unverified</span>
+<span class="card-state" id="card-state"><i aria-hidden="true"></i> Locked</span>
 </div>
 <div class="card-main">
 <span class="gauge-label">Certified lander</span>
@@ -207,7 +212,13 @@ LANDER = {
 </div>
 <div class="card-foot">
 <span><i class="gauge-label">Holding</i><b id="card-balance">&mdash; LANDING</b></span>
-<span><i class="gauge-label">Lander ID</i><b id="card-id">NOT ISSUED</b></span>
+<span><i class="gauge-label">Lander ID</i><b id="card-id">----</b></span>
+<span><i class="gauge-label">Confirmed slot</i><b id="card-slot">&mdash;</b></span>
+<span><i class="gauge-label">Issued</i><b id="card-issued">&mdash;</b></span>
+</div>
+<div class="card-proof">
+<span id="card-proof">Finalized swap required</span>
+<span id="card-signature">TX &mdash;</span>
 </div>
 <p class="card-preview" id="card-preview-label">Preview / not issued</p>
 </div>
@@ -219,19 +230,26 @@ LANDER = {
 </div>
 <div class="card-main">
 <span class="gauge-label">Lander ID</span>
-<b class="card-name" id="card-back-id" data-mirror="card-id">NOT ISSUED</b>
+<b class="card-name" id="card-back-id" data-mirror="card-id">----</b>
+<span class="card-back-proof" id="card-back-proof">On-chain proof required</span>
 <p class="card-motto">A holder owns a token.<br>A Lander belongs.</p>
 </div>
-<p class="card-note" id="card-reverse-note">Design preview only. No ID has been issued. The registry verifies eligible finalized swaps before a real card can be downloaded.</p>
+<p class="card-note" id="card-reverse-note">This card stays locked until the LANDING registry confirms a finalized qualifying swap on Solana.</p>
 </div>
 
 </div>
 </div>
 
+<!-- Download starts visible and locked, as on the live site. The newer
+     script unlocks it itself; for the older one, ui.js unlocks it when the
+     card is confirmed. Either script refuses a download without a
+     confirmed card. -->
 <div class="srcbar" style="justify-content:center;margin-top:var(--space-6)">
 <button type="button" class="vbtn" id="live-card-flip" aria-pressed="false">Read the reverse &#8635;</button>
-<button type="button" class="vbtn" id="download-card" hidden>Download</button>
+<button type="button" class="vbtn" id="download-card" disabled aria-disabled="true">Download card</button>
 </div>
+<p class="card-lock-note card-lock-locked">Download unlocks once the registry confirms a finalized swap.</p>
+<p class="card-lock-note card-lock-proof"><a id="card-proof-link" target="_blank" rel="noopener noreferrer" hidden>View the verified swap on Solscan <span aria-hidden="true">&#8599;</span></a></p>
 </div>
 
 <div class="lander-form" id="certified">

@@ -325,6 +325,12 @@ input.mono-addr::placeholder { color: var(--text-muted); opacity: 1; }
 
 .lander-card-area { position: sticky; top: 100px; }
 
+/* Sticky only beside the form. Stacked above it on a narrow screen, a
+   sticky card stayed pinned while the form scrolled up underneath it. */
+@media (max-width: 900px) {
+  .lander-card-area { position: static; }
+}
+
 /* The card flips on its own axis. The slot holds both faces; whichever is
    facing away is hidden from the reader and from assistive tech. */
 .lander-card { perspective: 1400px; }
@@ -464,6 +470,61 @@ input.mono-addr::placeholder { color: var(--text-muted); opacity: 1; }
 }
 
 .card-note { margin: 0; font-size: var(--step--2); color: var(--text-muted); }
+
+/* The newer lander-live.js writes its state as "<i></i> LABEL"; the <i> is
+   a status light. */
+.card-state i {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: 1px;
+  opacity: 0.6;
+}
+#lander-card[data-certification="confirmed"] .card-state i { opacity: 1; }
+
+/* Proof line: verification state on the left, transaction on the right. */
+.card-proof {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.card-proof span:last-child { overflow-wrap: anywhere; }
+
+.card-back-proof {
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* The preview label and the lock note belong to an unconfirmed card. The
+   older script hides the label itself; the newer one leaves it, so the
+   confirmed state hides both here. */
+#lander-card[data-certification="confirmed"] .card-preview,
+.lander-card-area:has(#lander-card[data-certification="confirmed"]) .card-lock-locked {
+  display: none;
+}
+
+.card-lock-note {
+  margin: var(--space-3) 0 0;
+  text-align: center;
+  font-size: var(--step--1);
+  color: var(--text-muted);
+}
+.card-lock-proof:has(> a[hidden]) { display: none; }
+.card-lock-note a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
 
 .card-preview,
 .card-motto {
